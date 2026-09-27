@@ -1,0 +1,56 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+
+# Local runtime data
+workspace/*
+!workspace/.gitkeep
+output/
+.taskmind/
+backend/.taskmind/
+# 旧数据目录（迁移前仍忽略，避免误提交用户已有数据）
+.oneagent/
+backend/.oneagent/
+
+# Local evaluation artifacts
+backend/tests/eval_legacy/reports/*.md
+!backend/tests/eval_legacy/reports/README.md
+backend/tests/eval_legacy/reports/historical/runtime/*.md
+backend/tests/eval_legacy/reports/historical/skill_learning/*.md
+
+# Public documentation allowlist
+# docs 默认只保留 README 使用的演示资源和公开 Sandbox 说明，
+# 评测记录、学习笔记、开发记录与面试资料均仅保存在本地。
+docs/*
+!docs/assets/
+!docs/assets/**
+!docs/images/
+!docs/images/**
+!docs/sandbox.md
+
+# Desktop (Electron / Vite)
+desktop/node_modules/
+desktop/dist/
+desktop/dist-electron/
+
+# Swift / Swift Package Manager
+native/macos-computer-helper/.build/
+.swiftpm/
+
+# Non-code / local-only artifacts (excluded from the repository)
+tmp/
+.DS_Store
+.claude/
+.specify/
+backend/tests/eval_legacy/reports/local_win_*/

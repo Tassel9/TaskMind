@@ -1,0 +1,16 @@
+id: learning-06
+group: learning
+name: Candidate 未经确认 → SkillStore 不可见
+user_input: "learning pipeline"
+# Human Gate 机制测试：直接预置 Candidate，不跑真实模型产候选。
+initial_pending_candidates:
+  - proposed_name: python-runtime-debug
+    description: 已待评审的 Python 调试候选
+    action: create
+    source_task_ids: [seed-a, seed-b, seed-c]
+expect:
+  learning:
+    batch_size: 3
+    human_gate_only: true
+    candidate_count: 1
+    created_skill_names: []

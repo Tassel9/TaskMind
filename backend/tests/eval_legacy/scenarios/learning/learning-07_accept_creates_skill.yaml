@@ -1,0 +1,16 @@
+id: learning-07
+group: learning
+name: Candidate accept → SkillStore 能 discover
+user_input: "learning pipeline"
+# Human Gate 机制测试：直接预置 Candidate，accept 后应生成正式 Skill。
+initial_pending_candidates:
+  - proposed_name: python-runtime-debug
+    description: 已待评审的 Python 调试候选
+    action: create
+    source_task_ids: [seed-a, seed-b, seed-c]
+expect:
+  learning:
+    batch_size: 3
+    human_gate_only: true
+    candidate_count: 1
+    created_skill_names: [python-runtime-debug]

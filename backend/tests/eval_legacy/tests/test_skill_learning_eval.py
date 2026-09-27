@@ -1,0 +1,339 @@
+"""Skill Learning Eval 的离线测试。
+
+用 Fake 模型驱动 learning_harness，验证 learning-01..09 场景的状态机：
+无候选 / CREATE / 机械操作不沉淀 / pitfalls / 证据不足→NONE / 强证据→UPDATE /
+Human Gate（预置 Candidate 的 pending 不可见 / accept / reject）/ 防重。
+Human Gate 场景不依赖模型产候选，直接预置 Candidate。
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from app.skill_learning import TaskCard
+from tests.eval_legacy.learning_harness import (
+    prepare_learning_environment,
+    run_learning_scenario,
+)
+from tests.eval_legacy.loader import load_scenarios
+from tests.eval_legacy.mocks import fake_registry, model_response
+
+# 供 distillation 复用的 candidate 响应模板（按场景覆盖 action / name / pitfalls）。
+_DISTILL_CREATE = {
+    "action": "create",
+    "proposed_name": "python-runtime-debug",
+    "description": "排查 Python 运行时错误的标准流程",
+    "reason": "多个相似任务证明该流程稳定",
+    "procedure": ["复现", "读 traceback", "定位根因", "修复", "跑 pytest"],
+    "pitfalls": ["不要跳过复现", "不要直接改依赖前先确认 virtualenv"],
+    "verification": ["pytest 通过", "启动命令恢复正常"],
+}
+_DISTILL_CI = {
+    "action": "create",
+    "proposed_name": "ci-cache-recovery",
+    "description": "恢复被依赖缓存卡住的 CI 构建",
+    "reason": "多次出现相同缓存锁失败后清理缓存成功",
+    "procedure": ["查看失败日志", "清理缓存", "重试构建"],
+    "pitfalls": ["不要盲目升级依赖版本", "不要直接重跑不清理缓存"],
+    "verification": ["CI 全绿"],
+}
+_DISTILL_UPDATE = {
+    "action": "update",
+    "proposed_name": None,
+    "description": "在排查前先确认 virtualenv",
+    "reason": "最近多个任务都证明应先确认 virtualenv",
+    "procedure": ["复现", "确认 virtualenv", "读 traceback", "修复", "验证"],
+    "pitfalls": ["不要跳过 virtualenv 确认"],
+    "verification": ["pytest 通过"],
+    "existing_skill_name": "debug-python",
+}
+
+
+def _learning_scenario(scenario_id: str):
+    scenarios = load_scenarios()
+    return next(s for s in scenarios if s.id == scenario_id)
+
+
+def _mining_response(task_ids: tuple[str, ...], *, clusters: bool) -> str:
+    if not clusters:
+        return json.dumps({"clusters": []}, ensure_ascii=False)
+    return json.dumps(
+        {
+            "clusters": [
+                {
+                    "id": "pattern-1",
+                    "task_ids": list(task_ids[:3]),
+                    "pattern_name": "Python runtime debugging",
+                    "description": "修复 Python 运行时错误",
+                    "similarity_reason": "均为 Python 报错排查",
+                    "reusable_value": "多步骤流程可复用",
+                }
+            ]
+        },
+        ensure_ascii=False,
+    )
+
+
+def _registry_for(
+    task_ids: tuple[str, ...],
+    *,
+    clusters: bool,
+    distill: dict,
+    related_skills: tuple[str, ...] = (),
+):
+    responses = [
+        model_response(content=_mining_response(task_ids, clusters=clusters)),
+    ]
+    if related_skills:
+        # catalog 非空时 distiller 先做相关性筛选（额外一次模型调用）。
+        responses.append(
+            model_response(
+                content=json.dumps(
+                    {"related_skills": list(related_skills)},
+                    ensure_ascii=False,
+                )
+            )
+        )
+    responses.append(
+        model_response(content=json.dumps(distill, ensure_ascii=False))
+    )
+    return fake_registry(responses)
+
+
+@pytest.mark.asyncio
+async def test_learning_01_unrelated_tasks_no_candidate(tmp_path: Path) -> None:
+    scenario = _learning_scenario("learning-01")
+    registry, _ = _registry_for((), clusters=False, distill={})
+    outcome = await run_learning_scenario(
+        scenario,
+        root=tmp_path / "l01",
+        registry=registry,
+    )
+    assert outcome.error is None
+    assert outcome.candidates == ()
+    assert outcome.mining is not None and outcome.mining.cluster_count == 0
+
+
+@pytest.mark.asyncio
+async def test_learning_fixture_preserves_task_card_facts(
+    tmp_path: Path,
+) -> None:
+    from app.skill_learning.service import _to_card
+    from tests.eval_legacy.scenario import Scenario
+
+    scenario = Scenario.model_validate(
+        {
+            "id": "learning-task-card-fields",
+            "group": "learning",
+            "name": "TaskCard 保留任务事实",
+            "initial_tasks": [
+                {
+                    "alias": "completed",
+                    "title": "恢复 Python 环境",
+                    "description": "诊断虚拟环境损坏",
+                    "goal": "恢复测试运行",
+                    "status": "completed",
+                    "constraints": ["不要重装全部依赖"],
+                    "key_facts": ["项目使用 Python 3.14"],
+                    "run_ids": ["run-1", "run-2"],
+                    "steps": [
+                        {
+                            "id": "s1",
+                            "title": "确认 virtualenv",
+                            "status": "done",
+                            "note": "环境已确认",
+                        }
+                    ],
+                }
+            ],
+            "user_input": "分析可复用模式。",
+            "expect": {},
+        }
+    )
+    environment = await prepare_learning_environment(
+        scenario,
+        root=tmp_path / "task-card-fields",
+    )
+    task = await environment.task_store.get(environment.task_ids[0])
+
+    assert task is not None
+    card: TaskCard = _to_card(task)
+    assert card.description == "诊断虚拟环境损坏"
+    assert card.constraints == ("不要重装全部依赖",)
+    assert card.key_facts == ("项目使用 Python 3.14",)
+    assert card.run_count == 2
+
+
+@pytest.mark.asyncio
+async def test_learning_02_similar_tasks_create_candidate(tmp_path: Path) -> None:
+    scenario = _learning_scenario("learning-02")
+    env = await prepare_learning_environment(scenario, root=tmp_path / "l02")
+    registry, _ = _registry_for(env.task_ids, clusters=True, distill=_DISTILL_CREATE)
+    outcome = await run_learning_scenario(
+        scenario,
+        root=tmp_path / "l02",
+        registry=registry,
+        environment=env,
+    )
+    assert outcome.error is None
+    assert len(outcome.candidates) == 1
+    candidate = outcome.candidates[0]
+    assert candidate.proposed_name == "python-runtime-debug"
+    assert set(candidate.source_task_ids).issubset(set(env.task_ids))
+    assert candidate.source_run_ids
+    assert candidate.reason
+    assert candidate.procedure
+    assert outcome.created_skills == ()
+    # pending：正式 Skill 尚不可见。
+    assert await env.skill_store.load("python-runtime-debug") is None
+
+
+@pytest.mark.asyncio
+async def test_learning_03_mechanical_rename_no_candidate(tmp_path: Path) -> None:
+    scenario = _learning_scenario("learning-03")
+    registry, _ = _registry_for((), clusters=False, distill={})
+    outcome = await run_learning_scenario(
+        scenario,
+        root=tmp_path / "l03",
+        registry=registry,
+    )
+    assert outcome.error is None
+    assert outcome.candidates == ()
+
+
+@pytest.mark.asyncio
+async def test_learning_04_failure_then_success_pitfalls(tmp_path: Path) -> None:
+    scenario = _learning_scenario("learning-04")
+    env = await prepare_learning_environment(scenario, root=tmp_path / "l04")
+    registry, _ = _registry_for(env.task_ids, clusters=True, distill=_DISTILL_CI)
+    outcome = await run_learning_scenario(
+        scenario,
+        root=tmp_path / "l04",
+        registry=registry,
+        environment=env,
+    )
+    assert outcome.error is None
+    assert len(outcome.candidates) == 1
+    candidate = outcome.candidates[0]
+    assert candidate.proposed_name == "ci-cache-recovery"
+    assert candidate.pitfalls  # 稳定失败 → 应避免做法被沉淀
+    # pitfall 必须来自真实 Trace（cache/清理/重试），而非 Trace 中不存在的 reinstall。
+    pitfalls_text = " ".join(candidate.pitfalls).lower()
+    assert "reinstall" not in pitfalls_text or "不" in pitfalls_text
+
+
+@pytest.mark.asyncio
+async def test_learning_05a_insufficient_evidence_none(tmp_path: Path) -> None:
+    """证据不足 + 已有 debug-python Skill 覆盖 → 预期 NONE（无候选）。"""
+    scenario = _learning_scenario("learning-05a")
+    env = await prepare_learning_environment(scenario, root=tmp_path / "l05a")
+    distill_none = {
+        "action": "none",
+        "reason": "现有 debug-python 已覆盖该模式，且 Trace 证据不足以支撑 update",
+        "proposed_name": None,
+        "existing_skill_name": "debug-python",
+    }
+    registry, _ = _registry_for(
+        env.task_ids,
+        clusters=True,
+        distill=distill_none,
+        related_skills=("debug-python",),
+    )
+    outcome = await run_learning_scenario(
+        scenario,
+        root=tmp_path / "l05a",
+        registry=registry,
+        environment=env,
+    )
+    assert outcome.error is None
+    assert outcome.candidates == ()
+
+
+@pytest.mark.asyncio
+async def test_learning_05b_virtualenv_update(tmp_path: Path) -> None:
+    """强证据证明 virtualenv 是稳定新增步骤 → 预期 UPDATE debug-python。"""
+    scenario = _learning_scenario("learning-05b")
+    env = await prepare_learning_environment(scenario, root=tmp_path / "l05b")
+    registry, _ = _registry_for(
+        env.task_ids,
+        clusters=True,
+        distill=_DISTILL_UPDATE,
+        related_skills=("debug-python",),
+    )
+    outcome = await run_learning_scenario(
+        scenario,
+        root=tmp_path / "l05b",
+        registry=registry,
+        environment=env,
+    )
+    assert outcome.error is None
+    assert len(outcome.candidates) == 1
+    candidate = outcome.candidates[0]
+    assert candidate.action.value == "update"
+    assert candidate.existing_skill_name == "debug-python"
+    assert candidate.proposed_name == "debug-python"
+
+
+@pytest.mark.asyncio
+async def test_learning_06_pending_not_visible(tmp_path: Path) -> None:
+    """Human Gate：预置 Pending Candidate，未经确认 → SkillStore 不可见。"""
+    scenario = _learning_scenario("learning-06")
+    env = await prepare_learning_environment(scenario, root=tmp_path / "l06")
+    registry, _ = fake_registry([])
+    outcome = await run_learning_scenario(
+        scenario,
+        root=tmp_path / "l06",
+        registry=registry,
+        environment=env,
+    )
+    assert outcome.error is None
+    assert len(outcome.candidates) == 1
+    assert outcome.candidates[0].status.value == "pending"
+    # 未 accept → SkillStore 不可见。
+    catalog = await env.skill_store.catalog()
+    assert all(item.name != "python-runtime-debug" for item in catalog)
+    assert await env.skill_store.load("python-runtime-debug") is None
+
+
+@pytest.mark.asyncio
+async def test_learning_07_accept_creates_skill(tmp_path: Path) -> None:
+    """Human Gate：预置 Pending Candidate，accept 后生成正式 Skill。"""
+    scenario = _learning_scenario("learning-07")
+    env = await prepare_learning_environment(scenario, root=tmp_path / "l07")
+    registry, _ = fake_registry([])
+    outcome = await run_learning_scenario(
+        scenario,
+        root=tmp_path / "l07",
+        registry=registry,
+        environment=env,
+        accept_names=("python-runtime-debug",),
+    )
+    assert outcome.error is None
+    assert outcome.created_skills == ("python-runtime-debug",)
+    skill = await env.skill_store.load("python-runtime-debug")
+    assert skill is not None
+    catalog = await env.skill_store.catalog()
+    assert any(item.name == "python-runtime-debug" for item in catalog)
+
+
+@pytest.mark.asyncio
+async def test_learning_08_reject_no_skill(tmp_path: Path) -> None:
+    """Human Gate：预置 Pending Candidate，reject 后不产生正式 Skill。"""
+    scenario = _learning_scenario("learning-08")
+    env = await prepare_learning_environment(scenario, root=tmp_path / "l08")
+    registry, _ = fake_registry([])
+    outcome = await run_learning_scenario(
+        scenario,
+        root=tmp_path / "l08",
+        registry=registry,
+        environment=env,
+        reject_names=("python-runtime-debug",),
+    )
+    assert outcome.error is None
+    assert outcome.created_skills == ()
+    # reject 后不产生正式 Skill。
+    assert await env.skill_store.load("python-runtime-debug") is None
+    assert outcome.candidates[0].status.value == "rejected"
