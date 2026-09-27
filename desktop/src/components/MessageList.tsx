@@ -1,0 +1,117 @@
+import { memo } from 'react'
+import type { Message } from '../api/types'
+import { EmptyState } from './ui'
+import { AssistantContent } from './AssistantContent'
+
+export { AssistantContent }
+
+/** 渲染单元：一次“角色块”。同一轮回复的多条连续 assistant 消息合并成一组，
+   只显示一次作者行（头像），避免每个 step 落库消息都带一个头像。 */
+interface RenderedTurn {
+  key: number
+  role: 'user' | 'assistant'
+  /** 是否显示作者行（头像）。组内第一条为 true，后续连续 assistant 为 false。 */
+  author: boolean
+  content: string
+}
+
+function buildThread(messages: Message[]): RenderedTurn[] {
+  const out: RenderedTurn[] = []
+  let assistantOpen = false
+
+  messages.forEach((message, index) => {
+    switch (message.role) {
+      case 'system':
+        // 系统消息：协议内部，不渲染。
+        return
+      case 'tool':
+        // ToolResult：属于 Agent 上下文 / Trace，不进入主聊天正文。
+        return
+      case 'user': {
+        assistantOpen = false
+        out.push({
+          key: index,
+          role: 'user',
+          author: true,
+          content: message.content ?? '',
+        })
+        return
+      }
+      case 'assistant': {
+        // 1) 带工具调用的中间消息（tool_calls）：协议噪音，无论正文是否为空一律
+        //    不渲染 —— 模型一轮回复里可能有很多步，避免回复区出现长串工具调用。
+        if (message.tool_calls && message.tool_calls.length > 0) {
+          return
+        }
+        // 2) 无正文的空消息：同样跳过，让一次回复到最后只有一个头像。
+        // Provider 原始 reasoning 属于内部推理，历史数据即使包含也不展示。
+        const content = message.content ?? ''
+        if (!content) return
+
+        out.push({
+          key: index,
+          role: 'assistant',
+          author: !assistantOpen,
+          content,
+        })
+        assistantOpen = true
+        return
+      }
+      default:
+        // 未知 role：fail closed，不渲染（绝不当 assistant）。
+        return
+    }
+  })
+
+  return out
+}
+
+/** memo：messages 引用未变时跳过整棵树渲染，避免流式事件导致历史消息反复 markdown 解析。 */
+export default memo(function MessageList({
+  messages,
+}: {
+  messages: Message[]
+}): React.JSX.Element {
+  if (messages.length === 0) {
+    return (
+      <EmptyState
+        title="开始对话"
+        hint="向 TaskMind 描述你想做的事，Enter 发送。"
+      />
+    )
+  }
+  const thread = buildThread(messages)
+  return (
+    <div>
+      {thread.map((turn) => {
+        if (turn.role === 'user') {
+          return (
+            <div key={turn.key} className="message-user">
+              <div className="message-user__body">{turn.content}</div>
+            </div>
+          )
+        }
+        if (!turn.author) {
+          // 同一条回复的延续：无头像，仅正文（保持与首块一致的底部间距）。
+          return (
+            <div
+              key={turn.key}
+              className="message-assistant message-assistant--continuation"
+            >
+              <AssistantContent content={turn.content} />
+            </div>
+          )
+        }
+        return (
+          <div key={turn.key} className="message-assistant">
+            <div className="message-assistant__author">
+              <span className="message-assistant__avatar" aria-hidden="true" />
+              TaskMind
+            </div>
+            <AssistantContent content={turn.content} />
+          </div>
+        )
+      })}
+    </div>
+  )
+})

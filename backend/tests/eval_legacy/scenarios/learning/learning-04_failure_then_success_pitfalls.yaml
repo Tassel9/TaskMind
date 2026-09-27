@@ -1,0 +1,97 @@
+id: learning-04
+group: learning
+name: 相似任务有稳定失败→修正→成功 → pitfalls 含应避免做法
+user_input: "learning pipeline"
+initial_tasks:
+  - alias: b1
+    title: 修复构建失败（依赖缓存问题）
+    goal: 恢复 CI
+    status: completed
+    run_ids: [r1]
+    key_facts: [构建失败由依赖缓存异常引起，清理缓存后重试成功]
+    steps:
+      - {id: s1, title: 查看失败日志, status: done, note: 定位缓存问题}
+      - {id: s2, title: 清理缓存重试, status: done, note: 已解决}
+  - alias: b2
+    title: 修复构建失败（依赖缓存问题）
+    goal: 恢复 CI
+    status: completed
+    run_ids: [r2]
+    key_facts: [构建失败由依赖缓存异常引起，清理缓存后重试成功]
+    steps:
+      - {id: s1, title: 查看失败日志, status: done, note: 定位缓存问题}
+      - {id: s2, title: 清理缓存重试, status: done, note: 已解决}
+  - alias: b3
+    title: 修复构建失败（依赖缓存问题）
+    goal: 恢复 CI
+    status: completed
+    run_ids: [r3]
+    key_facts: [构建失败由依赖缓存异常引起，清理缓存后重试成功]
+    steps:
+      - {id: s1, title: 查看失败日志, status: done, note: 定位缓存问题}
+      - {id: s2, title: 清理缓存重试, status: done, note: 已解决}
+  - alias: b4
+    title: 修复构建失败（依赖缓存问题）
+    goal: 恢复 CI
+    status: completed
+    run_ids: [r4]
+    key_facts: [构建失败由依赖缓存异常引起，清理缓存后重试成功]
+    steps:
+      - {id: s1, title: 查看失败日志, status: done, note: 定位缓存问题}
+      - {id: s2, title: 清理缓存重试, status: done, note: 已解决}
+initial_runs:
+  - run_id: r1
+    events:
+      - {type: tool_started, tool_name: run_build, arguments: {}}
+      - {type: tool_completed, tool_name: run_build, arguments: {}, success: false, error: cache lock}
+      - {type: tool_started, tool_name: clean_cache, arguments: {}}
+      - {type: tool_completed, tool_name: clean_cache, arguments: {}}
+      - {type: tool_started, tool_name: run_build, arguments: {}}
+      - {type: tool_completed, tool_name: run_build, arguments: {}}
+      - {type: tool_started, tool_name: task_update, arguments: {task_id: "$task:b1", status: completed}}
+      - {type: tool_completed, tool_name: task_update, arguments: {task_id: "$task:b1", status: completed}}
+      - {type: agent_completed}
+  - run_id: r2
+    events:
+      - {type: tool_started, tool_name: run_build, arguments: {}}
+      - {type: tool_completed, tool_name: run_build, arguments: {}, success: false, error: cache corrupt}
+      - {type: tool_started, tool_name: clean_cache, arguments: {}}
+      - {type: tool_completed, tool_name: clean_cache, arguments: {}}
+      - {type: tool_started, tool_name: run_build, arguments: {}}
+      - {type: tool_completed, tool_name: run_build, arguments: {}}
+      - {type: tool_started, tool_name: task_update, arguments: {task_id: "$task:b2", status: completed}}
+      - {type: tool_completed, tool_name: task_update, arguments: {task_id: "$task:b2", status: completed}}
+      - {type: agent_completed}
+  - run_id: r3
+    events:
+      - {type: tool_started, tool_name: run_build, arguments: {}}
+      - {type: tool_completed, tool_name: run_build, arguments: {}, success: false, error: cache lock}
+      - {type: tool_started, tool_name: clean_cache, arguments: {}}
+      - {type: tool_completed, tool_name: clean_cache, arguments: {}}
+      - {type: tool_started, tool_name: run_build, arguments: {}}
+      - {type: tool_completed, tool_name: run_build, arguments: {}}
+      - {type: tool_started, tool_name: task_update, arguments: {task_id: "$task:b3", status: completed}}
+      - {type: tool_completed, tool_name: task_update, arguments: {task_id: "$task:b3", status: completed}}
+      - {type: agent_completed}
+  - run_id: r4
+    events:
+      - {type: tool_started, tool_name: run_build, arguments: {}}
+      - {type: tool_completed, tool_name: run_build, arguments: {}, success: false, error: cache lock}
+      - {type: tool_started, tool_name: clean_cache, arguments: {}}
+      - {type: tool_completed, tool_name: clean_cache, arguments: {}}
+      - {type: tool_started, tool_name: run_build, arguments: {}}
+      - {type: tool_completed, tool_name: run_build, arguments: {}}
+      - {type: tool_started, tool_name: task_update, arguments: {task_id: "$task:b4", status: completed}}
+      - {type: tool_completed, tool_name: task_update, arguments: {task_id: "$task:b4", status: completed}}
+      - {type: agent_completed}
+expect:
+  learning:
+    batch_size: 4
+    candidate_count: 1
+    create_count: 1
+    expected_action: create
+    expected_names: [ci-cache-recovery]
+    expected_pattern_task_aliases: [b1, b2, b3, b4]
+    # pitfall 期望必须来自真实 Trace：run_build 失败(cache lock/corrupt) →
+    # clean_cache → run_build 成功。只写 Trace 里真实存在的内容。
+    expected_pitfall_keywords: [cache, 缓存, log, 日志, retry, 清理]
