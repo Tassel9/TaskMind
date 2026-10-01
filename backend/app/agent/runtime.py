@@ -96,6 +96,7 @@ class AgentRuntime:
         tool_output_recorder: ToolOutputRecorder | None = None,
         post_run_submit: Callable[..., PostRunSubmitResult] | None = None,
         run_budget_config: RunBudgetConfig | None = None,
+        prefix_reuse_enabled: bool = True,
     ) -> None:
         if max_steps < 1:
             raise ValueError("max_steps must be at least 1")
@@ -152,6 +153,7 @@ class AgentRuntime:
             skill_store=skill_store,
             skill_context_provider=skill_context_provider,
             run_budget=self._run_budget,
+            prefix_reuse_enabled=prefix_reuse_enabled,
         )
 
     @property

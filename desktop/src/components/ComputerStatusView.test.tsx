@@ -56,4 +56,34 @@ describe('ComputerStatusView', () => {
     const html = renderToStaticMarkup(<ComputerStatusView status={status} />)
     expect(html).not.toContain('Request')
   })
+
+  it('Windows 平台显示运行时标签且不显示权限授权行', () => {
+    const html = renderToStaticMarkup(
+      <ComputerStatusView
+        status={{
+          ...status,
+          platform: 'win32',
+          runtime: 'windows',
+          permissions: { accessibility: 'granted', screen_recording: 'granted' },
+        }}
+      />,
+    )
+    expect(html).toContain('电脑操作运行时 · Windows')
+    expect(html).toContain('Windows 上无需辅助功能或屏幕录制授权。')
+    expect(html).not.toContain('permission-row')
+  })
+
+  it('缺少 helper 依赖时显示依赖提示', () => {
+    const html = renderToStaticMarkup(
+      <ComputerStatusView
+        status={{
+          ...status,
+          available: false,
+          reason: 'helper_dependency_missing',
+          permissions: { accessibility: 'unknown', screen_recording: 'unknown' },
+        }}
+      />,
+    )
+    expect(html).toContain('缺少 helper 运行依赖')
+  })
 })

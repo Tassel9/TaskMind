@@ -139,6 +139,7 @@ class EvalSuiteReport(BaseModel):
     git_commit: str | None = None
     scenario_digest: str | None = None
     run_root: str | None = None
+    prefix_reuse_enabled: bool | None = None
     samples: list[EvalSampleRecord] = Field(default_factory=list)
 
     @property

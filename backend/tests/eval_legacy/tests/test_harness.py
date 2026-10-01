@@ -7,7 +7,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from app.agent.events import InMemoryEventHandler
+from app.agent.events import AgentEventType, InMemoryEventHandler
 from tests.eval_legacy import harness
 from tests.eval_legacy.assertions import run_checks
 from tests.eval_legacy.loader import load_scenarios
@@ -313,6 +313,43 @@ async def test_eval03_checks_failed_tool_and_blocked_step(
     )
     checks, passed = await run_checks(scenario, outcome=outcome)
     assert passed is True, [(check.name, check.detail) for check in checks]
+
+
+async def test_harness_can_disable_request_prefix_reuse(
+    scenarios: tuple[Scenario, ...],
+    tmp_path,
+) -> None:
+    scenario = _by_id(scenarios, "eval-02")
+    registry, _ = fake_registry(
+        [
+            model_response(
+                tool_calls=(
+                    text_tool_call(
+                        "read-1",
+                        "read_file",
+                        {"path": "README.md"},
+                    ),
+                )
+            ),
+            model_response(content="TaskMind 是 Agent Runtime。"),
+        ]
+    )
+    outcome = await harness.run_scenario(
+        scenario,
+        root=tmp_path / "prefix-reuse-disabled",
+        provider="fake",
+        registry=registry,
+        prefix_reuse_enabled=False,
+    )
+
+    started = [
+        event
+        for event in outcome.events
+        if event.type is AgentEventType.MODEL_STARTED
+    ]
+    assert len(started) == 2
+    assert [event.cache_prefix_reused for event in started] == [False, False]
+    assert [event.prefix_decision for event in started] == ["rebuild", "rebuild"]
 
 
 async def test_eval05_really_compacts_and_keeps_goal(

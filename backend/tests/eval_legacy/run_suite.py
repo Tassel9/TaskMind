@@ -60,6 +60,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--group", action="append", help="筛选Core分组。")
     parser.add_argument("--tag", action="append", help="按场景标签筛选。")
     parser.add_argument("--runs", type=int, default=1, help="每条场景运行次数。")
+    parser.add_argument(
+        "--disable-prefix-reuse",
+        action="store_true",
+        help="关闭 TaskMind Run 内请求前缀续用，用于受控对照评测。",
+    )
     parser.add_argument("--provider", help="模型提供商。")
     parser.add_argument("--model", help="模型名。")
     parser.add_argument("--root", type=Path, help="保留运行现场的根目录。")
@@ -113,6 +118,7 @@ async def main(args: argparse.Namespace) -> int:
         ),
         scenario_digest=_scenario_digest(args, suites),
         run_root=str(root),
+        prefix_reuse_enabled=_prefix_reuse_enabled(args),
     )
 
     try:
@@ -124,6 +130,7 @@ async def main(args: argparse.Namespace) -> int:
                 provider=provider,
                 model=model,
                 registry=registry,
+                prefix_reuse_enabled=_prefix_reuse_enabled(args),
             )
         if "memory" in suites:
             await _run_memory(
@@ -202,6 +209,7 @@ async def _run_core(
     provider: str,
     model: str,
     registry: ModelAdapterRegistry,
+    prefix_reuse_enabled: bool,
 ) -> None:
     scenarios = _select_core(args)
     for scenario in scenarios:
@@ -212,6 +220,7 @@ async def _run_core(
                 provider=args.provider,
                 model=args.model,
                 registry=registry,
+                prefix_reuse_enabled=prefix_reuse_enabled,
             )
             checks, passed = await run_checks(scenario, outcome=outcome)
             sample = core_sample_from_outcome(
@@ -274,6 +283,7 @@ async def _run_memory(
                     model=args.model,
                     registry=registry,
                     memory_enabled=enabled,
+                    prefix_reuse_enabled=_prefix_reuse_enabled(args),
                 )
                 for phase in outcome.phases:
                     checks, passed = check_phase(
@@ -419,6 +429,7 @@ def _scenario_digest(args: argparse.Namespace, suites: tuple[str, ...]) -> str:
     serialized = json.dumps(
         {
             "compare_memory_off": args.compare_memory_off,
+            "prefix_reuse_enabled": _prefix_reuse_enabled(args),
             "scenarios": payload,
         },
         ensure_ascii=False,
@@ -426,6 +437,12 @@ def _scenario_digest(args: argparse.Namespace, suites: tuple[str, ...]) -> str:
         separators=(",", ":"),
     )
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
+def _prefix_reuse_enabled(args: argparse.Namespace) -> bool:
+    """兼容测试和旧调用方手工构造的 argparse.Namespace。"""
+
+    return not bool(getattr(args, "disable_prefix_reuse", False))
 
 
 def _expected_stability_keys(

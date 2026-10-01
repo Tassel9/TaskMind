@@ -68,7 +68,7 @@ def computer_screenshot(observation_id: str, request: Request) -> Response:
         resolved = candidate.resolve()
     except OSError:
         raise HTTPException(status_code=404, detail="not found")
-    if not str(resolved).startswith(str(screenshot_dir) + "/"):
+    if not resolved.is_relative_to(screenshot_dir):
         raise HTTPException(status_code=404, detail="not found")
     if not resolved.is_file():
         raise HTTPException(status_code=404, detail="not found")

@@ -1,0 +1,588 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-29T16:44:33.811213+00:00",
+  "provider": "deepseek",
+  "model": "deepseek-v4-pro",
+  "pairs": 3,
+  "valid_pairs": 3,
+  "run_root": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812",
+  "git_commit": null,
+  "aggregates": {
+    "rebuild": {
+      "runs": 3,
+      "passed_runs": 3,
+      "transition_observed_runs": 3,
+      "post_first_main_cached_input_tokens": 27648,
+      "post_first_main_input_tokens": 57370,
+      "post_first_main_cache_hit_rate": 0.48192435070594386,
+      "transition_cached_input_tokens": 1152,
+      "transition_input_tokens": 11408,
+      "transition_cache_hit_rate": 0.10098176718092566,
+      "provider_chargeable_tokens": 56291,
+      "duration_s": 30.07256500000949,
+      "prefix_decisions": {
+        "rebuild": 9,
+        "compact": 6
+      }
+    },
+    "reuse": {
+      "runs": 3,
+      "passed_runs": 3,
+      "transition_observed_runs": 3,
+      "post_first_main_cached_input_tokens": 110976,
+      "post_first_main_input_tokens": 125161,
+      "post_first_main_cache_hit_rate": 0.886665974225198,
+      "transition_cached_input_tokens": 26112,
+      "transition_input_tokens": 28317,
+      "transition_cache_hit_rate": 0.9221315817353534,
+      "provider_chargeable_tokens": 39998,
+      "duration_s": 23.85266139999294,
+      "prefix_decisions": {
+        "rebuild": 3,
+        "defer": 12
+      }
+    }
+  },
+  "records": [
+    {
+      "pair_index": 1,
+      "arm": "rebuild",
+      "prefix_reuse_enabled": false,
+      "cache_namespace": "20260929_164339_434812-pair-1-rebuild",
+      "passed": true,
+      "checks": [
+        {
+          "name": "ran_ok",
+          "ok": true,
+          "detail": "stop=final_answer; expected=['final_answer']"
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": "called=['read_file', 'read_file', 'read_file', 'read_file']"
+        },
+        {
+          "name": "skill",
+          "ok": true,
+          "detail": "未声明 Skill 期望"
+        },
+        {
+          "name": "task",
+          "ok": true,
+          "detail": "new_tasks=0"
+        },
+        {
+          "name": "files",
+          "ok": true,
+          "detail": "未声明文件期望"
+        },
+        {
+          "name": "answer",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "compaction",
+          "ok": true,
+          "detail": "compaction_events=[{'stage': 'rolling_summary', 'trimmed': True, 'before': 12587, 'after': 5107, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': True, 'summary_error': None}, {'stage': 'tool_rounds', 'trimmed': True, 'before': 8201, 'after': 7188, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}]"
+        }
+      ],
+      "stop_reason": "final_answer",
+      "steps": 5,
+      "tool_calls": 4,
+      "duration_s": 9.861529699999664,
+      "error": null,
+      "main_cache": {
+        "cached_input_tokens": 9600,
+        "input_tokens": 27748,
+        "known_calls": 5,
+        "hit_rate": 0.3459708807842007
+      },
+      "post_first_main_cache": {
+        "cached_input_tokens": 9216,
+        "input_tokens": 19129,
+        "known_calls": 4,
+        "hit_rate": 0.4817815881645669
+      },
+      "provider_total": {
+        "input_tokens": 34109,
+        "output_tokens": 520,
+        "total_tokens": 34629,
+        "cached_input_tokens": 15872,
+        "uncached_input_tokens": 18237,
+        "cache_read_input_tokens": 15872,
+        "cache_write_input_tokens": null,
+        "model_calls": 6
+      },
+      "provider_chargeable_tokens": 18757,
+      "prefix_decisions": {
+        "rebuild": 3,
+        "compact": 2
+      },
+      "transition": {
+        "step": 2,
+        "prefix_decision": "compact",
+        "compaction_stage": "rolling_summary",
+        "summary_updated": true,
+        "estimated_input_tokens": 5107,
+        "trigger_tokens": 12000,
+        "compact_ceiling_tokens": 19200,
+        "input_tokens": 3799,
+        "cached_input_tokens": 384,
+        "cache_hit_rate": 0.10107923137667807
+      },
+      "trace_path": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812\\pair-1\\rebuild\\trace.json",
+      "workspace_path": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812\\pair-1\\rebuild\\workspace"
+    },
+    {
+      "pair_index": 1,
+      "arm": "reuse",
+      "prefix_reuse_enabled": true,
+      "cache_namespace": "20260929_164339_434812-pair-1-reuse",
+      "passed": true,
+      "checks": [
+        {
+          "name": "ran_ok",
+          "ok": true,
+          "detail": "stop=final_answer; expected=['final_answer']"
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": "called=['read_file', 'read_file', 'read_file', 'read_file']"
+        },
+        {
+          "name": "skill",
+          "ok": true,
+          "detail": "未声明 Skill 期望"
+        },
+        {
+          "name": "task",
+          "ok": true,
+          "detail": "new_tasks=0"
+        },
+        {
+          "name": "files",
+          "ok": true,
+          "detail": "未声明文件期望"
+        },
+        {
+          "name": "answer",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "compaction",
+          "ok": true,
+          "detail": "compaction_events=[{'stage': 'none', 'trimmed': False, 'before': 12584, 'after': 12584, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}, {'stage': 'none', 'trimmed': False, 'before': 13607, 'after': 13607, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}, {'stage': 'none', 'trimmed': False, 'before': 14636, 'after': 14636, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}, {'stage': 'tool_rounds', 'trimmed': True, 'before': 15694, 'after': 14684, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}]"
+        }
+      ],
+      "stop_reason": "final_answer",
+      "steps": 5,
+      "tool_calls": 4,
+      "duration_s": 7.264225699997041,
+      "error": null,
+      "main_cache": {
+        "cached_input_tokens": 37376,
+        "input_tokens": 50260,
+        "known_calls": 5,
+        "hit_rate": 0.7436530043772384
+      },
+      "post_first_main_cache": {
+        "cached_input_tokens": 36992,
+        "input_tokens": 41641,
+        "known_calls": 4,
+        "hit_rate": 0.8883552268197209
+      },
+      "provider_total": {
+        "input_tokens": 50260,
+        "output_tokens": 290,
+        "total_tokens": 50550,
+        "cached_input_tokens": 37376,
+        "uncached_input_tokens": 12884,
+        "cache_read_input_tokens": 37376,
+        "cache_write_input_tokens": null,
+        "model_calls": 5
+      },
+      "provider_chargeable_tokens": 13174,
+      "prefix_decisions": {
+        "rebuild": 1,
+        "defer": 4
+      },
+      "transition": {
+        "step": 2,
+        "prefix_decision": "defer",
+        "compaction_stage": "none",
+        "summary_updated": false,
+        "estimated_input_tokens": 12584,
+        "trigger_tokens": 12000,
+        "compact_ceiling_tokens": 19200,
+        "input_tokens": 9426,
+        "cached_input_tokens": 8704,
+        "cache_hit_rate": 0.9234033524294505
+      },
+      "trace_path": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812\\pair-1\\reuse\\trace.json",
+      "workspace_path": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812\\pair-1\\reuse\\workspace"
+    },
+    {
+      "pair_index": 2,
+      "arm": "reuse",
+      "prefix_reuse_enabled": true,
+      "cache_namespace": "20260929_164339_434812-pair-2-reuse",
+      "passed": true,
+      "checks": [
+        {
+          "name": "ran_ok",
+          "ok": true,
+          "detail": "stop=final_answer; expected=['final_answer']"
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": "called=['read_file', 'read_file', 'read_file', 'read_file']"
+        },
+        {
+          "name": "skill",
+          "ok": true,
+          "detail": "未声明 Skill 期望"
+        },
+        {
+          "name": "task",
+          "ok": true,
+          "detail": "new_tasks=0"
+        },
+        {
+          "name": "files",
+          "ok": true,
+          "detail": "未声明文件期望"
+        },
+        {
+          "name": "answer",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "compaction",
+          "ok": true,
+          "detail": "compaction_events=[{'stage': 'none', 'trimmed': False, 'before': 12584, 'after': 12584, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}, {'stage': 'none', 'trimmed': False, 'before': 13601, 'after': 13601, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}, {'stage': 'none', 'trimmed': False, 'before': 14627, 'after': 14627, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}, {'stage': 'tool_rounds', 'trimmed': True, 'before': 15679, 'after': 14669, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}]"
+        }
+      ],
+      "stop_reason": "final_answer",
+      "steps": 5,
+      "tool_calls": 4,
+      "duration_s": 9.860378599994874,
+      "error": null,
+      "main_cache": {
+        "cached_input_tokens": 37376,
+        "input_tokens": 50424,
+        "known_calls": 5,
+        "hit_rate": 0.7412343328573695
+      },
+      "post_first_main_cache": {
+        "cached_input_tokens": 36992,
+        "input_tokens": 41805,
+        "known_calls": 4,
+        "hit_rate": 0.8848702308336324
+      },
+      "provider_total": {
+        "input_tokens": 50424,
+        "output_tokens": 474,
+        "total_tokens": 50898,
+        "cached_input_tokens": 37376,
+        "uncached_input_tokens": 13048,
+        "cache_read_input_tokens": 37376,
+        "cache_write_input_tokens": null,
+        "model_calls": 5
+      },
+      "provider_chargeable_tokens": 13522,
+      "prefix_decisions": {
+        "rebuild": 1,
+        "defer": 4
+      },
+      "transition": {
+        "step": 2,
+        "prefix_decision": "defer",
+        "compaction_stage": "none",
+        "summary_updated": false,
+        "estimated_input_tokens": 12584,
+        "trigger_tokens": 12000,
+        "compact_ceiling_tokens": 19200,
+        "input_tokens": 9464,
+        "cached_input_tokens": 8704,
+        "cache_hit_rate": 0.9196956889264581
+      },
+      "trace_path": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812\\pair-2\\reuse\\trace.json",
+      "workspace_path": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812\\pair-2\\reuse\\workspace"
+    },
+    {
+      "pair_index": 2,
+      "arm": "rebuild",
+      "prefix_reuse_enabled": false,
+      "cache_namespace": "20260929_164339_434812-pair-2-rebuild",
+      "passed": true,
+      "checks": [
+        {
+          "name": "ran_ok",
+          "ok": true,
+          "detail": "stop=final_answer; expected=['final_answer']"
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": "called=['read_file', 'read_file', 'read_file', 'read_file']"
+        },
+        {
+          "name": "skill",
+          "ok": true,
+          "detail": "未声明 Skill 期望"
+        },
+        {
+          "name": "task",
+          "ok": true,
+          "detail": "new_tasks=0"
+        },
+        {
+          "name": "files",
+          "ok": true,
+          "detail": "未声明文件期望"
+        },
+        {
+          "name": "answer",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "compaction",
+          "ok": true,
+          "detail": "compaction_events=[{'stage': 'rolling_summary', 'trimmed': True, 'before': 12582, 'after': 5105, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': True, 'summary_error': None}, {'stage': 'tool_rounds', 'trimmed': True, 'before': 8213, 'after': 7205, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}]"
+        }
+      ],
+      "stop_reason": "final_answer",
+      "steps": 5,
+      "tool_calls": 4,
+      "duration_s": 10.245149500005937,
+      "error": null,
+      "main_cache": {
+        "cached_input_tokens": 9600,
+        "input_tokens": 27788,
+        "known_calls": 5,
+        "hit_rate": 0.3454728659853174
+      },
+      "post_first_main_cache": {
+        "cached_input_tokens": 9216,
+        "input_tokens": 19169,
+        "known_calls": 4,
+        "hit_rate": 0.4807762533256821
+      },
+      "provider_total": {
+        "input_tokens": 34149,
+        "output_tokens": 604,
+        "total_tokens": 34753,
+        "cached_input_tokens": 15872,
+        "uncached_input_tokens": 18277,
+        "cache_read_input_tokens": 15872,
+        "cache_write_input_tokens": null,
+        "model_calls": 6
+      },
+      "provider_chargeable_tokens": 18881,
+      "prefix_decisions": {
+        "rebuild": 3,
+        "compact": 2
+      },
+      "transition": {
+        "step": 2,
+        "prefix_decision": "compact",
+        "compaction_stage": "rolling_summary",
+        "summary_updated": true,
+        "estimated_input_tokens": 5105,
+        "trigger_tokens": 12000,
+        "compact_ceiling_tokens": 19200,
+        "input_tokens": 3816,
+        "cached_input_tokens": 384,
+        "cache_hit_rate": 0.10062893081761007
+      },
+      "trace_path": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812\\pair-2\\rebuild\\trace.json",
+      "workspace_path": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812\\pair-2\\rebuild\\workspace"
+    },
+    {
+      "pair_index": 3,
+      "arm": "rebuild",
+      "prefix_reuse_enabled": false,
+      "cache_namespace": "20260929_164339_434812-pair-3-rebuild",
+      "passed": true,
+      "checks": [
+        {
+          "name": "ran_ok",
+          "ok": true,
+          "detail": "stop=final_answer; expected=['final_answer']"
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": "called=['read_file', 'read_file', 'read_file', 'read_file']"
+        },
+        {
+          "name": "skill",
+          "ok": true,
+          "detail": "未声明 Skill 期望"
+        },
+        {
+          "name": "task",
+          "ok": true,
+          "detail": "new_tasks=0"
+        },
+        {
+          "name": "files",
+          "ok": true,
+          "detail": "未声明文件期望"
+        },
+        {
+          "name": "answer",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "compaction",
+          "ok": true,
+          "detail": "compaction_events=[{'stage': 'rolling_summary', 'trimmed': True, 'before': 12587, 'after': 5042, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': True, 'summary_error': None}, {'stage': 'tool_rounds', 'trimmed': True, 'before': 8154, 'after': 7141, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}]"
+        }
+      ],
+      "stop_reason": "final_answer",
+      "steps": 5,
+      "tool_calls": 4,
+      "duration_s": 9.965885800003889,
+      "error": null,
+      "main_cache": {
+        "cached_input_tokens": 9600,
+        "input_tokens": 27691,
+        "known_calls": 5,
+        "hit_rate": 0.34668303781011883
+      },
+      "post_first_main_cache": {
+        "cached_input_tokens": 9216,
+        "input_tokens": 19072,
+        "known_calls": 4,
+        "hit_rate": 0.48322147651006714
+      },
+      "provider_total": {
+        "input_tokens": 34052,
+        "output_tokens": 473,
+        "total_tokens": 34525,
+        "cached_input_tokens": 15872,
+        "uncached_input_tokens": 18180,
+        "cache_read_input_tokens": 15872,
+        "cache_write_input_tokens": null,
+        "model_calls": 6
+      },
+      "provider_chargeable_tokens": 18653,
+      "prefix_decisions": {
+        "rebuild": 3,
+        "compact": 2
+      },
+      "transition": {
+        "step": 2,
+        "prefix_decision": "compact",
+        "compaction_stage": "rolling_summary",
+        "summary_updated": true,
+        "estimated_input_tokens": 5042,
+        "trigger_tokens": 12000,
+        "compact_ceiling_tokens": 19200,
+        "input_tokens": 3793,
+        "cached_input_tokens": 384,
+        "cache_hit_rate": 0.101239124703401
+      },
+      "trace_path": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812\\pair-3\\rebuild\\trace.json",
+      "workspace_path": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812\\pair-3\\rebuild\\workspace"
+    },
+    {
+      "pair_index": 3,
+      "arm": "reuse",
+      "prefix_reuse_enabled": true,
+      "cache_namespace": "20260929_164339_434812-pair-3-reuse",
+      "passed": true,
+      "checks": [
+        {
+          "name": "ran_ok",
+          "ok": true,
+          "detail": "stop=final_answer; expected=['final_answer']"
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": "called=['read_file', 'read_file', 'read_file', 'read_file']"
+        },
+        {
+          "name": "skill",
+          "ok": true,
+          "detail": "未声明 Skill 期望"
+        },
+        {
+          "name": "task",
+          "ok": true,
+          "detail": "new_tasks=0"
+        },
+        {
+          "name": "files",
+          "ok": true,
+          "detail": "未声明文件期望"
+        },
+        {
+          "name": "answer",
+          "ok": true,
+          "detail": "ok"
+        },
+        {
+          "name": "compaction",
+          "ok": true,
+          "detail": "compaction_events=[{'stage': 'none', 'trimmed': False, 'before': 12584, 'after': 12584, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}, {'stage': 'none', 'trimmed': False, 'before': 13609, 'after': 13609, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}, {'stage': 'none', 'trimmed': False, 'before': 14638, 'after': 14638, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}, {'stage': 'tool_rounds', 'trimmed': True, 'before': 15696, 'after': 14686, 'input_budget': 24000, 'trigger': 12000, 'target': 10800, 'summary_updated': False, 'summary_error': None}]"
+        }
+      ],
+      "stop_reason": "final_answer",
+      "steps": 5,
+      "tool_calls": 4,
+      "duration_s": 6.728057100001024,
+      "error": null,
+      "main_cache": {
+        "cached_input_tokens": 37376,
+        "input_tokens": 50334,
+        "known_calls": 5,
+        "hit_rate": 0.7425597011960107
+      },
+      "post_first_main_cache": {
+        "cached_input_tokens": 36992,
+        "input_tokens": 41715,
+        "known_calls": 4,
+        "hit_rate": 0.8867793359702745
+      },
+      "provider_total": {
+        "input_tokens": 50334,
+        "output_tokens": 344,
+        "total_tokens": 50678,
+        "cached_input_tokens": 37376,
+        "uncached_input_tokens": 12958,
+        "cache_read_input_tokens": 37376,
+        "cache_write_input_tokens": null,
+        "model_calls": 5
+      },
+      "provider_chargeable_tokens": 13302,
+      "prefix_decisions": {
+        "rebuild": 1,
+        "defer": 4
+      },
+      "transition": {
+        "step": 2,
+        "prefix_decision": "defer",
+        "compaction_stage": "none",
+        "summary_updated": false,
+        "estimated_input_tokens": 12584,
+        "trigger_tokens": 12000,
+        "compact_ceiling_tokens": 19200,
+        "input_tokens": 9427,
+        "cached_input_tokens": 8704,
+        "cache_hit_rate": 0.923305399384746
+      },
+      "trace_path": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812\\pair-3\\reuse\\trace.json",
+      "workspace_path": "..\\tmp\\prefix-cache-ab-v4pro-3pairs\\prefix-cache-ab-20260929_164339_434812\\pair-3\\reuse\\workspace"
+    }
+  ]
+}

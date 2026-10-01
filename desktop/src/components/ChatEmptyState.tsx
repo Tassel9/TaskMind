@@ -51,7 +51,7 @@ export default function ChatEmptyState({
   return (
     <section className="chat-empty" aria-label="开始新会话">
       <div className="chat-empty__eyebrow">
-        <span className="chat-empty__mark">V</span>
+        <span className="chat-empty__mark">T</span>
         <span>新的工作空间</span>
       </div>
       <h1>今天想让 TaskMind 帮你完成什么？</h1>

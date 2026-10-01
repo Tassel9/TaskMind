@@ -44,9 +44,17 @@ export default function ComputerStatusView({
 
   const reason = status.reason === 'helper_not_found'
     ? '未找到原生 helper'
-    : status.reason === 'unsupported_platform'
-      ? `不支持当前平台（${status.platform}）`
-      : status.reason
+    : status.reason === 'helper_dependency_missing'
+      ? '缺少 helper 运行依赖'
+      : status.reason === 'unsupported_platform'
+        ? `不支持当前平台（${status.platform}）`
+        : status.reason
+  const isWindows = status.platform === 'win32'
+  const runtimeLabel = status.runtime === 'windows'
+    ? 'Windows'
+    : status.runtime === 'macos'
+      ? 'macOS'
+      : status.runtime ?? '未知'
 
   return (
     <div className="computer-status-view">
@@ -56,28 +64,32 @@ export default function ComputerStatusView({
           <strong>{status.available ? '可用' : '不可用'}</strong>
           <span>
             {status.available
-              ? `电脑操作运行时 · ${status.runtime ?? 'macOS'}`
+              ? `电脑操作运行时 · ${runtimeLabel}`
               : reason ?? '运行时不可用'}
           </span>
         </div>
         <small>{leaseLabel(status.lease)}</small>
       </div>
-      <div className="permission-list">
-        <PermissionRow
-          name="辅助功能"
-          status={status.permissions.accessibility}
-          onRequest={onRequestPermission
-            ? () => onRequestPermission('accessibility')
-            : undefined}
-        />
-        <PermissionRow
-          name="屏幕录制"
-          status={status.permissions.screen_recording}
-          onRequest={onRequestPermission
-            ? () => onRequestPermission('screen_recording')
-            : undefined}
-        />
-      </div>
+      {isWindows ? (
+        <p className="empty-inline">Windows 上无需辅助功能或屏幕录制授权。</p>
+      ) : (
+        <div className="permission-list">
+          <PermissionRow
+            name="辅助功能"
+            status={status.permissions.accessibility}
+            onRequest={onRequestPermission
+              ? () => onRequestPermission('accessibility')
+              : undefined}
+          />
+          <PermissionRow
+            name="屏幕录制"
+            status={status.permissions.screen_recording}
+            onRequest={onRequestPermission
+              ? () => onRequestPermission('screen_recording')
+              : undefined}
+          />
+        </div>
+      )}
       {status.helper_path ? (
         <details className="technical-inline">
           <summary>运行时详情</summary>

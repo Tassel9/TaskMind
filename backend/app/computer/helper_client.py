@@ -55,16 +55,19 @@ class ComputerHelperProtocolError(ComputerHelperError):
 
 
 class MacOSHelperClient:
-    """通过 JSON Lines 与长驻 Swift helper 子进程通信。"""
+    """通过 JSON Lines 与长驻 helper 子进程通信（macOS: Swift; Windows: Python）。"""
 
     def __init__(
         self,
         helper_path: str | Path,
         *,
         helper_args: Sequence[str] = (),
+        cwd: str | Path | None = None,
     ) -> None:
         self.helper_path = Path(helper_path).expanduser().resolve()
         self.helper_args = tuple(helper_args)
+        #: 子进程工作目录（Windows helper 需要 backend 根目录以 import app 包）。
+        self.cwd = str(Path(cwd)) if cwd is not None else None
 
         self._process: asyncio.subprocess.Process | None = None
         self._reader_task: asyncio.Task[None] | None = None
@@ -90,6 +93,7 @@ class MacOSHelperClient:
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            cwd=self.cwd,
         )
         self._process = process
         self._protocol_broken = False
