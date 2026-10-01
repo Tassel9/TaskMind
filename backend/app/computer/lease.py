@@ -1,10 +1,15 @@
-"""进程内 owner + flock 跨 Host 互斥的 Computer Machine Lease。"""
+"""进程内 owner + 跨 Host 文件锁的 Computer Machine Lease。
+
+跨进程互斥实现按平台选择：
+- POSIX：``fcntl.flock``（非阻塞独占锁）；
+- Windows：``msvcrt.locking`` 区域锁（等价语义，同进程/跨进程都阻挡）。
+"""
 
 from __future__ import annotations
 
-import fcntl
 import logging
 import os
+import sys
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -14,10 +19,38 @@ from typing import TYPE_CHECKING
 
 from app.tools.hooks import ToolExecutionContext, ToolHook, ToolHookDecision
 
+if sys.platform == "win32":  # pragma: no cover - 平台分支
+    import msvcrt
+
+    fcntl = None
+else:
+    import fcntl
+
+    msvcrt = None
+
 if TYPE_CHECKING:
     from .session import ComputerSessionManager
 
 logger = logging.getLogger("taskmind.computer.lease")
+
+
+def _lock_file_exclusive(handle) -> None:  # noqa: ANN001
+    """非阻塞独占文件锁；已被占用时抛 OSError。"""
+
+    if fcntl is not None:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return
+    # Windows：锁定文件头部 1 字节的区域锁（LK_NBLCK 立即返回失败）。
+    handle.seek(0)
+    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+
+
+def _unlock_file(handle) -> None:  # noqa: ANN001
+    if fcntl is not None:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        return
+    handle.seek(0)
+    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
 
 
 class ComputerBusyError(RuntimeError):
@@ -65,8 +98,8 @@ class ComputerLeaseManager:
             self.lock_path.parent.mkdir(parents=True, exist_ok=True)
             lock_file = self.lock_path.open("a+", encoding="utf-8")
             try:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError as exc:
+                _lock_file_exclusive(lock_file)
+            except OSError as exc:
                 lock_file.close()
                 logger.info("computer lease busy in another host")
                 raise ComputerBusyError(
@@ -113,7 +146,7 @@ class ComputerLeaseManager:
         self._acquired_at = None
         if lock_file is not None:
             try:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+                _unlock_file(lock_file)
             finally:
                 lock_file.close()
 

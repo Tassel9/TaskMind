@@ -188,6 +188,7 @@ def build_runtime(
     provider: str | None = None,
     model: str | None = None,
     registry: ModelAdapterRegistry | None = None,
+    prefix_reuse_enabled: bool = True,
 ) -> AgentRuntime:
     """按场景配置构造真实 AgentRuntime；可注入 mock 注册表。"""
 
@@ -228,6 +229,7 @@ def build_runtime(
             max_active=skill_settings.skill_max_active,
             catalog_max_tokens=skill_settings.skill_catalog_max_tokens,
         ),
+        prefix_reuse_enabled=prefix_reuse_enabled,
     )
 
 
@@ -239,6 +241,7 @@ async def run_scenario(
     model: str | None = None,
     conversation_id: str = DEFAULT_CONVERSATION_ID,
     registry: ModelAdapterRegistry | None = None,
+    prefix_reuse_enabled: bool = True,
 ) -> EvalOutcome:
     """预置环境并真实运行一次场景，返回采集结果。"""
 
@@ -253,6 +256,7 @@ async def run_scenario(
         provider=provider,
         model=model,
         registry=registry,
+        prefix_reuse_enabled=prefix_reuse_enabled,
     )
     handler = InMemoryEventHandler()
     history = _messages_from_history(scenario.initial_history)

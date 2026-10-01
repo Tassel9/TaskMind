@@ -546,7 +546,7 @@ export default function ChatPage({
           <div className="message-thread">
             {selectedId === null ? (
               <section className="no-conversation">
-                <div className="chat-empty__mark">V</div>
+                <div className="chat-empty__mark">T</div>
                 <h1>开始一项新工作</h1>
                 <p>创建会话，然后告诉 TaskMind 你希望完成的结果。</p>
                 <button

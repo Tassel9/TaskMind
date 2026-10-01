@@ -166,6 +166,8 @@ def render_report(report: EvalSuiteReport) -> str:
         f"- Provider / Model：{report.provider} / {report.model}",
         f"- Suites：{', '.join(report.suites)}",
         f"- Tier：{report.tier}",
+        f"- TaskMind 前缀复用："
+        f"{_enabled_label(report.prefix_reuse_enabled)}",
         f"- Git Commit：{report.git_commit or '-'}",
         f"- Scenario Digest：{report.scenario_digest or '-'}",
         f"- 生成时间：{report.generated_at}",
@@ -387,6 +389,12 @@ def _append_raw_output(
 
 def _percent(value: float | None) -> str:
     return "未知" if value is None else f"{value:.1%}"
+
+
+def _enabled_label(value: bool | None) -> str:
+    if value is None:
+        return "未记录"
+    return "开启" if value else "关闭（对照组）"
 
 
 __all__ = [

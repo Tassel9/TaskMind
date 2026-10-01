@@ -134,6 +134,7 @@ class AgentLoop:
         skill_store: SkillStore | None,
         skill_context_provider: SkillContextProvider | None,
         run_budget: RunBudget,
+        prefix_reuse_enabled: bool,
     ) -> None:
         self._model_registry = model_registry
         self._tool_registry = tool_registry
@@ -151,6 +152,7 @@ class AgentLoop:
         self._skill_store = skill_store
         self._skill_context_provider = skill_context_provider
         self._run_budget = run_budget
+        self._prefix_reuse_enabled = prefix_reuse_enabled
         self._tool_round_executor = ToolRoundExecutor(
             registry=tool_registry,
             executor=tool_executor,
@@ -494,25 +496,28 @@ class AgentLoop:
                     AgentStopReason.CONTEXT_ERROR,
                     step=step,
                 )
-            # 本 Step 的前缀决策（观测用）：reuse=纯续用，defer=越软线仍续用，
-            # compact=发生压缩，rebuild=前缀断裂但未到压缩条件。
-            prefix_decision = "rebuild"
 
+            prefix_decision = "rebuild"
             continuation_messages = (
                 request_prefix_state.extend(
                     source_messages=source_messages,
                     context_messages=context_messages,
                     tools=request_tools,
                 )
-                if request_prefix_state is not None and not force_final_answer
+                if self._prefix_reuse_enabled
+                and request_prefix_state is not None
+                and not force_final_answer
                 else None
             )
+            # 续写成功即记为复用；复用长度取上一次已发送消息的总条数。
             cache_prefix_reused = continuation_messages is not None
             cache_prefix_message_count = (
                 len(request_prefix_state.sent_messages)
                 if cache_prefix_reused and request_prefix_state is not None
                 else 0
             )
+            # 复用判定此时仍是"初判"：context_manager.prepare 可能改写前缀
+            #（例如整理工具结果、更新滚动摘要），因此后面还会用实际消息对账一次。
             context_input_messages = continuation_messages or request_messages
             context_history_count = (
                 0
@@ -778,7 +783,11 @@ class AgentLoop:
                     step=step,
                 )
 
-            if not force_final_answer and not warning_appended_after_prepare:
+            if (
+                self._prefix_reuse_enabled
+                and not force_final_answer
+                and not warning_appended_after_prepare
+            ):
                 request_prefix_state = RequestPrefixState(
                     source_messages=source_messages,
                     context_messages=context_messages,

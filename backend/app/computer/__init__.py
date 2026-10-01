@@ -1,4 +1,4 @@
-"""Computer Runtime：目标绑定的屏幕观察、交互与 macOS 原生实现。
+"""Computer Runtime：目标绑定的屏幕观察、交互与跨平台原生实现。
 
 本轮提供：
 - ``models``：Observation / ElementTarget / CoordinateTarget / ActionResult；
@@ -6,14 +6,18 @@
 - ``fake``：FakeComputerRuntime（供 Agent Tool 离线单测使用）；
 - ``tools``：computer_observe / click / type / key / scroll / open_app /
   focus_window 七个 Agent 工具 + ``register_computer_tools``；
-- ``helper_client``：MacOSHelperClient（Python ↔ Swift helper 的 JSON Lines
-  长驻 subprocess 客户端）；
-- ``macos``：MacOSComputerRuntime（AXUIElement / ScreenCaptureKit / CGEvent）。
+- ``helper_client``：MacOSHelperClient（Python ↔ helper 子进程的 JSON Lines
+  长驻客户端；macOS / Windows 共用）；
+- ``macos``：MacOSComputerRuntime（协议映射层，本身无平台逻辑）；
+- ``win_helper``：Windows helper 实现（UIAutomation / SendInput /
+  PrintWindow），以 ``<python> -m app.computer.win_helper`` 启动。
 """
 
 from .bootstrap import (
     ComputerHostStatus,
+    build_computer,
     build_macos_computer,
+    build_windows_computer,
     computer_enabled,
     current_platform,
     resolve_helper_path,
@@ -104,7 +108,9 @@ __all__ = [
     "Target",
     "VerificationStatus",
     "Window",
+    "build_computer",
     "build_macos_computer",
+    "build_windows_computer",
     "computer_enabled",
     "current_platform",
     "default_observation",

@@ -71,6 +71,7 @@ async def run_scenario(
     model: str | None = None,
     registry: ModelAdapterRegistry | None = None,
     memory_enabled: bool = True,
+    prefix_reuse_enabled: bool = True,
 ) -> MemoryEvalOutcome:
     """按阶段运行场景；同一 conversation 复用历史，不同会话只共享 Memory。"""
 
@@ -96,6 +97,7 @@ async def run_scenario(
             provider=provider,
             model=model,
             memory_enabled=memory_enabled,
+            prefix_reuse_enabled=prefix_reuse_enabled,
         )
         started = perf_counter()
         try:
@@ -134,6 +136,7 @@ def _build_runtime(
     provider: str | None,
     model: str | None,
     memory_enabled: bool,
+    prefix_reuse_enabled: bool,
 ) -> AgentRuntime:
     tools = ToolRegistry()
     reflector = None
@@ -181,6 +184,7 @@ def _build_runtime(
         memory_manager=runtime_manager,
         memory_reflector=reflector,
         memory_maintenance_reflector=maintainer,
+        prefix_reuse_enabled=prefix_reuse_enabled,
     )
 
 
