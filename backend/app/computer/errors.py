@@ -1,4 +1,4 @@
-"""Computer Runtime 统一结构化错误码（Python ↔ Swift 协议共用词汇表）。
+"""Computer Runtime 统一结构化错误码（Python ↔ helper 协议词汇表）。
 
 错误码是稳定标识符，不通过解析一大段自然语言判断 Runtime 状态。
 模型友好的 recovery hint 保留在 message 里，但判定逻辑一律使用 code。

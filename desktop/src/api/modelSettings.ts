@@ -1,4 +1,4 @@
-/** 模型设置：非敏感配置由 Host 落盘，API Key 由 macOS Keychain 保存。 */
+/** 模型设置：非敏感配置由 Host 落盘，API Key 由 Windows 凭据管理器 保存。 */
 
 import { rpcClient } from '../rpc'
 import { RpcMethods } from '../rpc/methods'
@@ -13,7 +13,7 @@ export interface ProviderModelSettings {
   base_url: string | null
   api_style: ApiStyle
   configured: boolean
-  key_source: 'keychain' | 'environment' | 'none'
+  key_source: 'credential_manager' | 'environment' | 'none'
 }
 
 export interface ProviderModelSettingsUpdate {

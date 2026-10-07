@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.computer.macos import MacOSComputerRuntime
+from app.computer.helper_runtime import ComputerHelperRuntime
 
 
 class RecordingHelper:
@@ -28,7 +28,7 @@ class RecordingHelper:
         if method == "open_app":
             return {
                 "app": "Notes",
-                "bundle_id": "com.apple.Notes",
+                "bundle_id": "notepad.exe",
                 "process_id": 111,
                 "activation_status": "not_frontmost",
             }
@@ -53,7 +53,7 @@ class RecordingHelper:
 @pytest.mark.asyncio
 async def test_run_a_end_then_run_b_never_inherits_notes() -> None:
     helper = RecordingHelper()
-    runtime = MacOSComputerRuntime(helper)  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(helper)  # type: ignore[arg-type]
 
     # --- Run A：open_app Notes → target = Notes ---
     run_a = runtime.begin_session("run-a")
@@ -83,7 +83,7 @@ async def test_run_a_end_then_run_b_never_inherits_notes() -> None:
 @pytest.mark.asyncio
 async def test_end_session_is_idempotent_and_clears_python_state() -> None:
     helper = RecordingHelper()
-    runtime = MacOSComputerRuntime(helper)  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(helper)  # type: ignore[arg-type]
     runtime.begin_session("run-a")
     assert await runtime.end_session("run-a") is True
     assert await runtime.end_session("run-a") is False  # 第二次幂等

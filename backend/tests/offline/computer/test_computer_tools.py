@@ -1,6 +1,6 @@
 """Computer Tools V0 测试。
 
-全部使用 FakeComputerRuntime，不调用真实 macOS API、不需要 Accessibility /
+全部使用 FakeComputerRuntime，不调用真实 Windows API、不需要 Accessibility /
 Screen Recording 权限、不调用模型 API（fake model）。
 
 覆盖（对应需求 14）：
@@ -413,11 +413,11 @@ async def test_computer_key_with_modifiers() -> None:
     _, fake = _build()
     tool = ComputerKeyTool(fake)
     result = await tool.execute(
-        {"key": "c", "modifiers": ["command", "shift"]}
+        {"key": "c", "modifiers": ["control", "shift"]}
     )
     assert result["action"] == "key"
     assert fake.action_history[0].metadata["key"] == "c"
-    assert fake.action_history[0].metadata["modifiers"] == ("command", "shift")
+    assert fake.action_history[0].metadata["modifiers"] == ("control", "shift")
 
     # 缺省 modifiers → 空。
     await tool.execute({"key": "enter"})
@@ -428,11 +428,11 @@ async def test_computer_key_with_element_ref() -> None:
     _, fake = _build()
     tool = ComputerKeyTool(fake)
     result = await tool.execute(
-        {"key": "enter", "modifiers": ["command"], "element_ref": "e2"}
+        {"key": "enter", "modifiers": ["control"], "element_ref": "e2"}
     )
     assert result["action"] == "key"
     assert fake.action_history[0].metadata["key"] == "enter"
-    assert fake.action_history[0].metadata["modifiers"] == ("command",)
+    assert fake.action_history[0].metadata["modifiers"] == ("control",)
     assert fake.action_history[0].metadata["element_ref"] == "e2"
 
 

@@ -1,4 +1,4 @@
-/** macOS 风格命令面板：搜索、方向键、Enter 执行、Esc 关闭。 */
+/** 命令面板：搜索、方向键、Enter 执行、Esc 关闭。 */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 

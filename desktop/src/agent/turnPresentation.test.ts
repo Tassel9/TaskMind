@@ -253,7 +253,7 @@ describe('label helpers', () => {
   it('toolActiveLabel 带参数摘要', () => {
     expect(toolActiveLabel('computer_type', { text: '测试' })).toBe('输入 “测试”')
     expect(toolActiveLabel('read_file', { path: '/tmp/a.md' })).toBe('读取 /tmp/a.md')
-    expect(toolActiveLabel('computer_key', { key: 'n', modifiers: 'command' })).toBe('按键 ⌘ N')
+    expect(toolActiveLabel('computer_key', { key: 'n', modifiers: 'control' })).toBe('按键 Ctrl N')
     expect(toolActiveLabel('unknown_tool', {})).toBe('运行 unknown tool')
   })
 
@@ -297,7 +297,7 @@ describe('buildComputerContext', () => {
       id: 'snapshot-1',
       created_at: null,
       active_app: { name: 'TaskMind', bundle_id: null, pid: 1 },
-      target: { name: 'TextEdit', bundle_id: 'com.apple.TextEdit', pid: 2 },
+      target: { name: 'Notepad', bundle_id: 'notepad.exe', pid: 2 },
       active_window: {
         ref: 'w1', title: 'Untitled', bounds: { x: 0, y: 0, width: 1, height: 1 },
       },
@@ -305,7 +305,7 @@ describe('buildComputerContext', () => {
       elements: [],
       screenshot_ref: null,
     })
-    expect(context.target).toBe('TextEdit')
+    expect(context.target).toBe('Notepad')
     expect(context.window).toBe('Untitled')
     expect(context.lastAction).toBe('已输入 “ TaskMind”')
     expect(context.verification).toBe('已验证')

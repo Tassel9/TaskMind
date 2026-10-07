@@ -10,7 +10,7 @@ import {
 
 function commands(): ComposerCommand[] {
   return [
-    { id: 'new', label: 'New conversation', hint: '⌘N', onSelect: vi.fn() },
+    { id: 'new', label: 'New conversation', hint: 'CtrlN', onSelect: vi.fn() },
     { id: 'plan', label: 'Plan mode', disabled: true, onSelect: vi.fn() },
     { id: 'runs', label: 'Open runs', hint: 'Execution history', onSelect: vi.fn() },
   ]

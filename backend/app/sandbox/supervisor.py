@@ -7,7 +7,6 @@ from pathlib import Path
 
 from .backends import (
     HostSandboxBackend,
-    MacOSSeatbeltBackend,
     SandboxBackend,
     UnsupportedSandboxBackend,
     resolve_executable,
@@ -135,8 +134,6 @@ class SandboxSupervisor:
 
 
 def _platform_backend() -> SandboxBackend:
-    if sys.platform == "darwin":
-        return MacOSSeatbeltBackend()
     return UnsupportedSandboxBackend(sys.platform)
 
 

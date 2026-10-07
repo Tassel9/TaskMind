@@ -23,8 +23,8 @@ def main(lock_path: Path) -> None:
         lease.close()
 
     print("\nFreshness 人工场景：")
-    print("1. 用 V7 demo observe TextEdit，保留 observation_id。")
-    print("2. 手动切换到 Safari。")
+    print("1. 用 computer_observe 观察 Notepad，保留 observation_id。")
+    print("2. 手动切换到 Microsoft Edge。")
     print("3. 批准旧 click/type；预期 helper 返回 stale_observation。")
 
 

@@ -44,13 +44,8 @@ desktop/node_modules/
 desktop/dist/
 desktop/dist-electron/
 
-# Swift / Swift Package Manager
-native/macos-computer-helper/.build/
-.swiftpm/
-
 # Non-code / local-only artifacts (excluded from the repository)
 tmp/
-.DS_Store
 .claude/
 .specify/
 backend/tests/eval_legacy/reports/local_win_*/

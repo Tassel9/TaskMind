@@ -2,7 +2,7 @@
 
 连 ws://127.0.0.1:8000/rpc：
 1. 清理遗留 pending 普通审批（approve 放行）
-2. conversation.send("打开备忘录，输入测试两个字")
+2. conversation.send("打开记事本，输入测试两个字")
 3. 监听 approval.required：
    - 普通审批 → approve（放行，验证浮窗忽略它）
    - computer_* → 捕获
@@ -24,7 +24,7 @@ URL = "ws://127.0.0.1:8000/rpc"
 _request_id = 0
 
 # 默认提示词；可用命令行参数覆盖（argv[1]）。
-DEFAULT_CONTENT = "打开备忘录，输入测试两个字"
+DEFAULT_CONTENT = "打开记事本，输入测试两个字"
 
 
 def req(method: str, params: dict | None = None) -> dict:

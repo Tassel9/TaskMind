@@ -1,14 +1,7 @@
-"""Computer Runtime V0 领域模型（纯数据结构，不依赖真实 macOS）。
+"""Computer Runtime 领域模型：Observation、Target、Element 和 ActionResult。
 
-这些类型只表达"一次屏幕观察 / 一个交互目标 / 一次操作结果"的契约，
-不包含任何 AXUIElement / ScreenCaptureKit / CGEvent 等系统实现。
-
-关键约定：
-- ``Bounds`` 是统一的矩形结构（x/y/width/height），不用 tuple/list 表达；
-- ``CoordinateTarget.x/y`` 是 observation screenshot coordinate（截图坐标系），
-  V0 不做 Retina / macOS 坐标换算；
-- ``ElementTarget`` 必须绑定 ``observation_id`` —— element ref 只在对应
-  Observation 内有效，不能被当成永久 UI ID。
+仅定义数据结构；截图坐标以所观察窗口的截图像素为单位，
+由 Windows helper 映射到屏幕坐标。
 """
 
 from __future__ import annotations
@@ -225,7 +218,7 @@ class CoordinateTarget(BaseModel):
     """引用某次 Observation 截图坐标。
 
     语义：``x / y`` 是 observation screenshot coordinate（截图坐标系），
-    不是全局屏幕坐标。V0 不实现 Retina / macOS 坐标换算。
+    不是全局屏幕坐标。V0 不实现 系统坐标换算。
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)

@@ -131,10 +131,14 @@ sequenceDiagram
 
 ## 本地运行
 
+当前桌面端和电脑操作面向 Windows，使用 Electron + React 界面和 Python Host。
+模型密钥可通过设置页保存到 Windows 凭据管理器，也可使用后端环境配置。
+
 ### 环境要求
 
 | 组件 | 要求 | 说明 |
 | :--- | :--- | :--- |
+| 操作系统 | Windows | 电脑操作使用 UI Automation、SendInput 和 PrintWindow |
 | Python | 3.12+ | 推荐 3.13 |
 | 模型 API | DeepSeek（或任意 OpenAI / Anthropic 兼容端点） | 在 `.env` 中配置 |
 | 网络 | 可访问模型 API | 其余全程本地 |
@@ -142,6 +146,7 @@ sequenceDiagram
 ### 1. 安装与配置
 
 ```powershell
+cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -151,28 +156,36 @@ Copy-Item .env.example .env
 编辑 `.env`（DeepSeek 官方 API 为例）：
 
 ```ini
-APIKEY=sk-你的密钥
-API=https://api.deepseek.com
-MODEL=deepseek-v4-pro
+DEEPSEEK_API_KEY=你的密钥
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-pro
+MODEL_DEFAULT_PROVIDER=deepseek
 ```
 
 也支持 Anthropic 兼容（`ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL`）与 OpenAI 兼容（`OPENAI_API_KEY` / `OPENAI_BASE_URL`）两种配置方式。
 
-### 2. 启动 Web 工作台
+### 2. 启动后端和桌面端
 
 ```powershell
-python -m taskmind.server --port 8017
+python -m app.server --port 8000
 ```
 
-浏览器打开 `http://127.0.0.1:8017`，即可在本地控制台里发起编码任务。`--model` / `--api-base` 可临时覆盖 `.env`；直接双击 `web/index.html`（无后端）会自动降级为演示数据，仅作界面预览。
+在另一个 PowerShell 终端进入项目根目录，再启动桌面端：
+
+```powershell
+cd desktop
+npm ci
+npm run electron:dev
+```
+
+桌面端通过 `http://127.0.0.1:8000` 对应的 JSON-RPC WebSocket 连接后端。
+后端启动时可使用 `--provider` / `--model` 临时覆盖模型选择。
 
 ### 3. 或使用 CLI
 
 ```powershell
-python -m taskmind.main                                                # 交互式 REPL
-python -m taskmind.main --resume <SESSION_ID>                          # 恢复原会话
-python -m taskmind.main --resume <ID> --fork-session                   # 恢复并分支，原会话不变
-python -m taskmind.main --resume <ID> --rewind-files <CHECKPOINT_ID>   # 独立回退文件
+python -m app           # 在 backend 目录启动交互式 CLI
+python -m app --help    # 查看当前 CLI 参数
 ```
 
 REPL 内支持 `/context`、`/compact`、`/branch [EVENT_ID]`、`/tasks`、`/rewind-files`、`/runs`、`/steps`、`/uncertain`。
@@ -182,7 +195,7 @@ REPL 内支持 `/context`、`/compact`、`/branch [EVENT_ID]`、`/tasks`、`/rew
 技能按目录扫描，用户级优先于项目级：
 
 ```text
-.taskmind/skills/<name>/SKILL.md     # 项目级：随仓库走
+backend/.taskmind/skills/<name>/SKILL.md # 项目级技能
 ~/.taskmind/skills/<name>/SKILL.md   # 用户级：全局可用
 ```
 
@@ -206,23 +219,24 @@ user-invocable: true
 
 ```text
 TaskMind
-├── taskmind/                # Agent 运行时与 Web 服务
-│   ├── agent.py             # Agent 外壳与事件处理
-│   ├── runtime_store.py     # SQLite 控制面（会话 / 运行 / 步骤 / 检查点）
-│   ├── session_memory.py    # 十段式会话记忆
-│   ├── skills.py            # SKILL.md 技能发现与执行
-│   ├── tools.py             # 内建工具集
-│   ├── server.py            # FastAPI + WebSocket 服务
-│   └── main.py              # CLI 入口
-├── web/                     # 零构建 Web 工作台
-├── .taskmind/skills/        # 项目级技能（调试 / 测试 / 重构 / Git ...）
-├── docs/images/             # README 截图
-├── requirements.txt
-└── Dockerfile
+├── backend/
+│   ├── app/                 # Agent、会话、上下文、记忆、任务和工具
+│   │   ├── computer/        # Windows 电脑操作运行时和 Python helper
+│   │   ├── model_settings/  # 模型配置与 Windows 凭据管理器
+│   │   └── server/          # FastAPI + JSON-RPC WebSocket Host
+│   ├── tests/               # 离线回归和冻结 Eval V1
+│   ├── scripts/             # 开发演示与诊断脚本
+│   └── .taskmind/           # 本地运行数据，Git 忽略
+├── desktop/
+│   ├── electron/            # 桌面窗口、审批浮窗和系统通知
+│   └── src/                 # React 界面与 RPC 客户端
+├── docs/                    # 文档和演示资源
+└── workspace/               # 默认任务工作区
 ```
 
 ## 说明与边界
 
-- **本地优先** — 会话、运行、检查点全部存放于本机 SQLite（`~/.taskmind/runtime.db`），除模型调用外不出网。
+- **本地优先** — 会话、运行、检查点存放于 `backend/.taskmind/taskmind.db`；模型调用和显式联网工具会访问外部服务。
+- **进程隔离边界** — 当前没有原生 OS 隔离后端；请求隔离的 Shell / MCP 调用会拒绝执行。只有显式配置可信的 `host` 模式才直接运行，详见 [执行边界](docs/sandbox.md)。
 - **危险操作默认确认** — Shell、删除类操作会先请求人工确认；权限模式可随时调整。
 - **恢复不猜测** — 结果不确定的写入必须核验后才继续；文件回退先做 SHA 校验，拒绝覆盖外部漂移。

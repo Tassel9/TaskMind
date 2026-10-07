@@ -202,7 +202,7 @@ export function floatingApprovalDismissDelay(
 
 /**
  * 交互审批和终态提示可以显示；已批准后的执行阶段必须隐藏 Electron 浮窗，
- * 避免状态更新/窗口 resize 把目标 macOS App 从 frontmost 位置挤走。
+ * 避免状态更新/窗口 resize 把目标应用 从 frontmost 位置挤走。
  */
 export function floatingApprovalShouldBeVisible(
   phase: FloatingApprovalPhase,

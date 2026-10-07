@@ -35,7 +35,7 @@ from app.models.types import (
     ToolCall,
     ToolPermission,
 )
-from app.sandbox import SandboxFilesystemMode, SandboxSupervisor
+from app.sandbox import SandboxFilesystemMode
 from app.tools import ToolExecutor, ToolRegistry
 
 
@@ -478,24 +478,5 @@ async def test_stdio_client_call_timeout() -> None:
     try:
         with pytest.raises(MCPToolCallError, match="TimeoutError"):
             await client.call_tool("slow", {"delay": 0.5})
-    finally:
-        await client.close()
-
-
-@pytest.mark.skipif(sys.platform != "darwin", reason="仅验证 macOS Seatbelt")
-@pytest.mark.asyncio
-async def test_stdio_client_runs_fake_server_inside_native_sandbox() -> None:
-    backend_root = Path(__file__).resolve().parents[3]
-    client = StdioMCPClient(
-        _stdio_config(),
-        sandbox_supervisor=SandboxSupervisor(backend_root),
-    )
-    await client.start()
-    try:
-        assert client.launch_spec is not None
-        assert client.launch_spec.sandboxed is True
-        assert client.launch_spec.backend == "macos_seatbelt"
-        output = json.loads(await client.call_tool("echo", {"text": "sandbox"}))
-        assert output["structured_content"] == {"result": "sandbox"}
     finally:
         await client.close()

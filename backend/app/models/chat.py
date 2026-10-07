@@ -1105,7 +1105,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--setup",
         action="store_true",
-        help="启动交互式模型设置，密钥优先保存到 macOS Keychain。",
+        help="启动交互式模型设置，密钥优先保存到 Windows 凭据管理器。",
     )
     parser.add_argument(
         "--system",

@@ -80,7 +80,7 @@ function ApprovalItem({
       <div className="approval-card__heading">
         <div className="approval-card__icon">
           <span className="approval-card__icon-label">
-            {desktop ? '⌘' : '›'}
+            {desktop ? 'Ctrl' : '›'}
           </span>
         </div>
         <div className="approval-card__content">

@@ -22,7 +22,7 @@ from .models import (
     ProviderSettingsUpdate,
     StoredModelSettings,
 )
-from .secrets import MacOSKeychainSecretStore, ModelSecretStore
+from .secrets import ModelSecretStore, WindowsCredentialSecretStore
 from .store import ModelSettingsStore
 
 _PROVIDER_LABELS = {
@@ -62,7 +62,7 @@ class ModelSettingsService:
         base_settings: ModelSettings | None = None,
     ) -> None:
         self.store = store or ModelSettingsStore()
-        self.secrets = secrets or MacOSKeychainSecretStore()
+        self.secrets = secrets or WindowsCredentialSecretStore()
         self.base_settings = base_settings or ModelSettings()
 
     def view(
@@ -77,11 +77,11 @@ class ModelSettingsService:
         providers = []
         for provider in ModelProvider:
             item = stored.providers[provider.value]
-            keychain_key = self.secrets.get(provider.value)
+            credential_key = self.secrets.get(provider.value)
             env_key = _secret_value(getattr(base, _KEY_FIELDS[provider]))
             source = (
-                "keychain"
-                if keychain_key
+                "credential_manager"
+                if credential_key
                 else "environment"
                 if env_key
                 else "none"
@@ -206,14 +206,14 @@ def load_effective_model_configuration(
     secrets: ModelSecretStore | None = None,
     base_settings: ModelSettings | None = None,
 ) -> EffectiveModelConfiguration:
-    """启动时合并.env、非敏感JSON和Keychain；显式设置优先。"""
+    """启动时合并.env、非敏感JSON和Windows 凭据管理器；显式设置优先。"""
 
     resolved_store = store or ModelSettingsStore()
     stored = resolved_store.load()
     base = base_settings or ModelSettings()
     if stored is None:
         return EffectiveModelConfiguration(base, None, None, None)
-    resolved_secrets = secrets or MacOSKeychainSecretStore()
+    resolved_secrets = secrets or WindowsCredentialSecretStore()
     data = base.model_dump(mode="python")
     data["model_default_provider"] = stored.default_provider
     for provider in ModelProvider:

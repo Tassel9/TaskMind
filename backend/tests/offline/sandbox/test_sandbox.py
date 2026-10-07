@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import os
 import sys
 from pathlib import Path
@@ -19,7 +18,6 @@ from app.sandbox import (
     SandboxUnavailableError,
     UnsupportedSandboxBackend,
 )
-from app.tools.builtin.shell import ShellCommandTool
 
 
 class RecordingBackend(SandboxBackend):
@@ -130,81 +128,15 @@ def test_explicit_host_mode_is_visible_in_launch_spec(tmp_path: Path) -> None:
     assert launch.backend == "host"
 
 
-@pytest.mark.skipif(sys.platform != "darwin", reason="仅验证 macOS Seatbelt")
-@pytest.mark.asyncio
-async def test_native_sandbox_blocks_read_outside_workspace(tmp_path: Path) -> None:
-    workspace = tmp_path / "workspace"
-    workspace.mkdir()
-    secret = tmp_path / "secret.txt"
-    secret.write_text("host-secret", encoding="utf-8")
-    (workspace / ".env").write_text("workspace-secret", encoding="utf-8")
-    launch = SandboxSupervisor(workspace).prepare_launch(
-        command=sys.executable,
-        args=("-c", f"print(open({str(secret)!r}).read())"),
-        env={
-            key: value
-            for key in ("HOME", "LANG", "PATH", "TMPDIR")
-            if (value := os.environ.get(key))
-        },
-        cwd=None,
-        config=SandboxConfig(network=SandboxNetworkMode.DENIED),
-    )
-
-    process = await asyncio.create_subprocess_exec(
-        launch.command,
-        *launch.args,
-        cwd=launch.cwd,
-        env=launch.env,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await process.communicate()
-
-    assert process.returncode != 0
-    assert b"host-secret" not in stdout
-    assert b"Operation not permitted" in stderr
-
-
-@pytest.mark.skipif(sys.platform != "darwin", reason="仅验证 macOS Seatbelt")
-@pytest.mark.asyncio
-async def test_shell_tool_uses_workspace_sandbox(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    workspace = tmp_path / "workspace"
-    workspace.mkdir()
-    secret = tmp_path / "secret.txt"
-    secret.write_text("host-secret", encoding="utf-8")
-    (workspace / ".env").write_text("workspace-secret", encoding="utf-8")
-    monkeypatch.setenv("OPENAI_API_KEY", "must-not-leak")
-    tool = ShellCommandTool(
-        workspace,
-        sandbox_supervisor=SandboxSupervisor(workspace),
-    )
-
-    write_result = await tool.execute({"command": "printf safe > result.txt"})
-    read_result = await tool.execute({"command": f"cat {secret}"})
-    protected_result = await tool.execute({"command": "cat .env"})
-    env_result = await tool.execute(
-        {"command": "printf %s ${OPENAI_API_KEY:-not-present}"}
-    )
-    network_result = await tool.execute(
-        {
-            "command": (
-                "/usr/bin/python3 -c 'import socket; socket.socket(socket.AF_INET, "
-                "socket.SOCK_STREAM)'"
-            )
-        }
-    )
-
-    assert write_result["exit_code"] == 0
-    assert (workspace / "result.txt").read_text(encoding="utf-8") == "safe"
-    assert read_result["exit_code"] != 0
-    assert "host-secret" not in read_result["stdout"]
-    assert "Operation not permitted" in read_result["stderr"]
-    assert protected_result["exit_code"] != 0
-    assert "workspace-secret" not in protected_result["stdout"]
-    assert "Operation not permitted" in protected_result["stderr"]
-    assert env_result["stdout"] == "not-present"
-    assert network_result["exit_code"] != 0
-    assert "Operation not permitted" in network_result["stderr"]
+@pytest.mark.parametrize("filesystem", ["none", "read_only", "workspace_write"])
+def test_default_backend_rejects_native_isolation_without_fallback(
+    tmp_path, filesystem
+):
+    with pytest.raises(SandboxUnavailableError, match="拒绝降级执行"):
+        SandboxSupervisor(tmp_path).prepare_launch(
+            command=sys.executable,
+            args=(),
+            env={"PATH": os.environ.get("PATH", "")},
+            cwd=None,
+            config=SandboxConfig(filesystem=filesystem),
+        )

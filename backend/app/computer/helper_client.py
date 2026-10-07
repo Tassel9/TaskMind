@@ -1,24 +1,7 @@
-"""MacOSHelperClient：Python ↔ Swift 长驻 subprocess 的 JSON Lines 客户端。
+"""ComputerHelperClient：与 Windows helper 子进程通信的 JSON Lines 客户端。
 
-协议（与 Swift helper 约定，见 native/macos-computer-helper）：
-
-    Python → Swift:  {"id": 1, "method": "ping", "params": {}}
-    Swift → Python:  {"id": 1, "result": {"ok": true}}
-                     或
-                     {"id": 1, "error": {"code": "...", "message": "..."}}
-
-边界：
-- 只维护一个长驻进程，每次 ``call`` 不重新启动；
-- stdout 只读协议 JSON；stderr 作为日志逐行进入 logging；
-- 支持多个并发 async call（一个 stdout reader task + pending map）；
-- helper 意外退出时，所有 pending Future 统一 reject。
-
-异常：
-- ``ComputerHelperError``：helper 返回 error response 或请求失败；
-- ``ComputerHelperProcessError``：进程未启动 / 意外退出 / 无法写入；
-- ``ComputerHelperProtocolError``：helper 返回了无法关联或结构非法的响应。
-
-本模块只负责传输；真实电脑控制逻辑位于 Swift helper。
+请求与响应通过 id 关联；处理并发请求、超时、退出和协议错误。
+本模块只负责传输，电脑控制逻辑位于 win_helper。
 """
 
 from __future__ import annotations
@@ -54,8 +37,8 @@ class ComputerHelperProtocolError(ComputerHelperError):
     """helper 返回了无法关联或结构非法的响应。"""
 
 
-class MacOSHelperClient:
-    """通过 JSON Lines 与长驻 helper 子进程通信（macOS: Swift; Windows: Python）。"""
+class ComputerHelperClient:
+    """通过 JSON Lines 与长驻 Python helper 子进程通信。"""
 
     def __init__(
         self,
@@ -351,5 +334,5 @@ __all__ = [
     "ComputerHelperError",
     "ComputerHelperProcessError",
     "ComputerHelperProtocolError",
-    "MacOSHelperClient",
+    "ComputerHelperClient",
 ]

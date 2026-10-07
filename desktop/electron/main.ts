@@ -20,7 +20,6 @@ const APPROVAL_RIGHT_MARGIN = 20
 
 let mainWindow: BrowserWindow | null = null
 let approvalWindow: BrowserWindow | null = null
-let isQuitting = false
 
 interface NotificationPayload {
   title: string
@@ -45,7 +44,7 @@ function createApprovalWindow(): void {
     height: APPROVAL_MIN_HEIGHT,
     show: false,
     frame: false,
-    // 审批卡片可以接收鼠标点击，但不能成为 macOS key window。
+    // 审批卡片可以接收鼠标点击，但不能成为 前台窗口。
     // 否则点击 Allow 会激活 Electron，app.activate 随即把主窗口置前，
     // 并与 Computer Runtime 恢复目标 App 的动作产生焦点竞态。
     focusable: false,
@@ -70,8 +69,6 @@ function createApprovalWindow(): void {
   })
   approvalWindow = win
 
-  // 跨 macOS Space 可见：用户切到其它 Space 操作 App 时审批仍能出现。
-  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
 
   if (!app.isPackaged) {
     void win.loadURL(`${DEV_SERVER_URL}/approval.html`)
@@ -83,13 +80,6 @@ function createApprovalWindow(): void {
     console.log('[approval] floating window loaded')
   })
 
-  // 误触发关闭（如 Cmd+W）只隐藏不销毁：pending 审批不会丢、可重新出现。
-  win.on('close', (event) => {
-    if (process.platform === 'darwin' && !isQuitting) {
-      event.preventDefault()
-      win.hide()
-    }
-  })
   win.on('closed', () => {
     if (approvalWindow === win) approvalWindow = null
   })
@@ -157,13 +147,6 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // macOS 关闭窗口只隐藏，Renderer / WebSocket 保持活跃；显式 Quit 才退出。
-  win.on('close', (event) => {
-    if (process.platform === 'darwin' && !isQuitting) {
-      event.preventDefault()
-      win.hide()
-    }
-  })
   win.on('closed', () => {
     if (mainWindow === win) mainWindow = null
   })
@@ -229,10 +212,6 @@ void app.whenReady().then(() => {
   })
 })
 
-app.on('before-quit', () => {
-  isQuitting = true
-})
-
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+  app.quit()
 })

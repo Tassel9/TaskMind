@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-import os
+import subprocess
+import sys
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -23,6 +25,37 @@ from app.tools import (
     ToolExecutor,
     ToolRegistry,
 )
+
+
+def test_machine_lease_blocks_another_host_process(tmp_path) -> None:
+    """独立子进程持有租约时，当前 Host 必须拒绝抢占。"""
+
+    lock_path = tmp_path / "machine.lock"
+    child_code = (
+        "import sys; from app.computer import ComputerLeaseManager; "
+        "lease = ComputerLeaseManager(sys.argv[1]); lease.acquire('child-run'); "
+        "print('ready', flush=True); sys.stdin.readline(); lease.close()"
+    )
+    process = subprocess.Popen(
+        [sys.executable, "-c", child_code, str(lock_path)],
+        cwd=Path(__file__).resolve().parents[3],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    contender = ComputerLeaseManager(lock_path)
+    try:
+        assert process.stdout is not None
+        assert process.stdout.readline().strip() == "ready"
+        with pytest.raises(ComputerBusyError):
+            contender.acquire("parent-run")
+    finally:
+        process.communicate("release\n", timeout=10)
+        contender.close()
+    assert process.returncode == 0
+    assert contender.acquire("parent-run").owner_run_id == "parent-run"
+    contender.close()
 
 
 def test_machine_lease_owner_lifecycle(tmp_path) -> None:
@@ -54,41 +87,6 @@ def test_flock_blocks_second_manager(tmp_path) -> None:
     second.close()
 
 
-@pytest.mark.skipif(not hasattr(os, "fork"), reason="fcntl/fork is macOS-only")
-def test_flock_blocks_another_host_process(tmp_path) -> None:
-    """子进程模拟第二个 TaskMind Host，真正验证跨进程 flock。"""
-
-    lock_path = tmp_path / "machine.lock"
-    ready_read, ready_write = os.pipe()
-    release_read, release_write = os.pipe()
-    pid = os.fork()
-    if pid == 0:
-        try:
-            os.close(ready_read)
-            os.close(release_write)
-            lease = ComputerLeaseManager(lock_path)
-            lease.acquire("child-run")
-            os.write(ready_write, b"1")
-            os.read(release_read, 1)
-            lease.close()
-            os._exit(0)
-        except BaseException:
-            os._exit(1)
-
-    os.close(ready_write)
-    os.close(release_read)
-    assert os.read(ready_read, 1) == b"1"
-    contender = ComputerLeaseManager(lock_path)
-    try:
-        with pytest.raises(ComputerBusyError):
-            contender.acquire("parent-run")
-    finally:
-        os.write(release_write, b"1")
-        os.close(ready_read)
-        os.close(release_write)
-        _, status = os.waitpid(pid, 0)
-        contender.close()
-    assert os.waitstatus_to_exitcode(status) == 0
 
 
 class PlainTool(BaseTool):

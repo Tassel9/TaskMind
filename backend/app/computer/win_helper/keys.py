@@ -1,16 +1,7 @@
-"""键名与修饰键规范化（对齐 macOS 版 MacOSComputerCore/KeyInput.swift）。
+"""Windows 键名与修饰键规范化。
 
-对齐点：
-- 键表与 macOS 版保持一致（return/tab/escape/space/backspace/delete/
-  left/right/up/down/a-z/0-9）；"enter" 归一为 "return"；
-- modifier 稳定词表为 command/shift/option/control（别名 cmd/alt/ctrl）；
-- 未知键 / 未知 modifier 返回 None，绝不静默降级。
-
-Windows 差异（有意为之）：
-- 无 Ctrl 键的 macOS ``command`` 在 Windows 上映射为 **Ctrl**：
-  这样 "command+c" 的意图（复制）在 Windows 上按 Ctrl+C 生效，
-  符合模型的快捷键直觉；硬件上的 Win 键用新增别名 win/super 表达；
-- modifier 也可以是物理键面名称（alt/ctrl），语义与 macOS 别名一致。
+支持 control/ctrl、alt、shift 和 win/super/meta；enter 归一为 return。
+未知键和修饰键明确拒绝，避免把无效快捷键静默转换成其他操作。
 """
 
 from __future__ import annotations
@@ -34,7 +25,7 @@ VK_CONTROL = 0x11
 VK_MENU = 0x12  # Alt
 VK_LWIN = 0x5B
 
-#: 与 macOS 版 supportedKeyCodes 等价的键集（值替换为 Windows VK）。
+#: 支持的键名与 Windows Virtual-Key code。
 _SUPPORTED_KEYS: dict[str, int] = {
     "return": VK_RETURN,
     "tab": VK_TAB,
@@ -59,7 +50,7 @@ _EXTENDED_KEYS = frozenset(
 
 
 def normalize_key(raw: str) -> str:
-    """enter/return 统一为 return，其余转小写（对齐 macOS 版）。"""
+    """enter/return 统一为 return，其余转小写。"""
 
     key = raw.lower()
     return "return" if key == "enter" else key
@@ -79,27 +70,22 @@ def is_extended_key(vk: int) -> bool:
 # Modifiers
 # ---------------------------------------------------------------------------
 
-#: raw 别名 → 稳定词表（command/shift/option/control）。
+#: raw 别名 → 稳定词表（control/shift/alt/win）。
 _MODIFIER_ALIASES: dict[str, str] = {
-    "command": "command",
-    "cmd": "command",
     "shift": "shift",
-    "option": "option",
-    "alt": "option",
+    "alt": "alt",
     "control": "control",
     "ctrl": "control",
-    # Windows 扩展别名：物理 Win 键。
     "win": "win",
     "super": "win",
     "meta": "win",
 }
 
-#: 稳定词 → VK。command 有意映射为 Ctrl（见模块 docstring）。
+#: 稳定修饰键名称 → Windows Virtual-Key code。
 _MODIFIER_VK: dict[str, int] = {
-    "command": VK_CONTROL,
     "control": VK_CONTROL,
     "shift": VK_SHIFT,
-    "option": VK_MENU,
+    "alt": VK_MENU,
     "win": VK_LWIN,
 }
 
@@ -109,7 +95,7 @@ def normalize_modifier(raw: str) -> str | None:
 
 
 def normalize_modifiers(raw: list[str]) -> list[str] | None:
-    """按首次出现顺序去重；含未知值返回 None（对齐 macOS 版）。"""
+    """按首次出现顺序去重；含未知值返回 None。"""
 
     seen: set[str] = set()
     normalized: list[str] = []

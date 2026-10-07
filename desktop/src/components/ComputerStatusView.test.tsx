@@ -9,8 +9,8 @@ import ComputerStatusView from './ComputerStatusView'
 const status: ComputerStatus = {
   enabled: true,
   available: true,
-  platform: 'macos',
-  runtime: 'macos',
+  platform: 'win32',
+  runtime: 'windows',
   reason: null,
   helper_path: null,
   permissions: { accessibility: 'granted', screen_recording: 'required' },
@@ -18,13 +18,11 @@ const status: ComputerStatus = {
 }
 
 describe('ComputerStatusView', () => {
-  it('available 渲染状态与权限', () => {
+  it('available 渲染 Windows 运行时状态', () => {
     const html = renderToStaticMarkup(<ComputerStatusView status={status} />)
     expect(html).toContain('可用')
-    expect(html).toContain('辅助功能')
-    expect(html).toContain('已授权')
-    expect(html).toContain('屏幕录制')
-    expect(html).toContain('需要授权')
+    expect(html).toContain('电脑操作运行时 · Windows')
+    expect(html).not.toContain('permission-row')
     expect(html).toContain('空闲')
   })
 
@@ -41,15 +39,15 @@ describe('ComputerStatusView', () => {
       />,
     )
     expect(html).toContain('不可用')
-    expect(html).toContain('未找到原生 helper')
-    expect(html).toContain('未知')
+    expect(html).toContain('未找到 Windows helper')
+    expect(html).toContain('空闲')
   })
 
-  it('缺权限且有 handler 时显示 Request 按钮', () => {
+  it('Windows 不显示系统权限请求按钮', () => {
     const html = renderToStaticMarkup(
       <ComputerStatusView status={status} onRequestPermission={() => {}} />,
     )
-    expect(html).toContain('请求权限')
+    expect(html).not.toContain('请求权限')
   })
 
   it('无 handler 时不显示 Request 按钮', () => {

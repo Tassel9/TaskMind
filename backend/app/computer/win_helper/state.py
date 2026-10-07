@@ -1,6 +1,6 @@
 """Session / Target / Observation 缓存与 freshness 状态机。
 
-对齐 macOS 版 SessionState.swift 的语义：
+状态约束：
 
 - ``begin_session`` 是唯一可建立 native session 的入口，已有其它 session
   时拒绝（绝不隐式接管）；
@@ -34,7 +34,7 @@ SESSION_MISMATCH = "mismatch"
 
 SessionCheck = str  # "ok" / "not_active" / "mismatch"
 
-_BOUNDS_TOLERANCE = 2  # 像素（对齐 macOS 的 nearlyEqual(<1)，略放宽）
+_BOUNDS_TOLERANCE = 2  # 像素
 
 
 @dataclass
@@ -216,7 +216,7 @@ class SessionState:
     ) -> bool:
         """Freshness B：target 必须位于前台（+ 可选 bounds 稳定）。
 
-        对齐 macOS requireFreshObservation；调用方负责在失败时清缓存并
+        验证 observation 新鲜度；调用方负责在失败时清缓存并
         返回结构化 stale_observation。
         """
 

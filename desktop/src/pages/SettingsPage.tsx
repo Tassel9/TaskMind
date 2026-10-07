@@ -92,7 +92,7 @@ export default function SettingsPage(): React.JSX.Element {
 
               <section className="settings-group">
                 <header className="settings-group__header">
-                  <div><h3>电脑操作</h3><p>{computerQuery.data?.platform === 'win32' ? 'Windows 本地运行时' : 'macOS 辅助功能与屏幕读取权限'}</p></div>
+                  <div><h3>电脑操作</h3><p>Windows 本地运行时</p></div>
                 </header>
                 <ComputerStatusView
                   status={computerQuery.data ?? null}

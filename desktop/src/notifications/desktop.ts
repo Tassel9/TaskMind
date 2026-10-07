@@ -53,7 +53,7 @@ export class DesktopNotificationController {
     const data = params as { approval?: { id?: string; tool_name?: string } }
     const id = data.approval?.id
     if (!id || !this.isHidden()) return
-    // Computer approval 由独立 Floating Window 负责提醒，不再发 macOS
+    // Computer approval 由独立 Floating Window 负责提醒，不再发系统
     // 原生 Notification，避免同一审批出现双提醒。
     if (data.approval?.tool_name?.startsWith('computer_')) return
     this.deliver(`approval:${id}`, {

@@ -1,7 +1,7 @@
 """win_helper 纯逻辑单元测试（跨平台可跑；系统交互部分不在此覆盖）。
 
 覆盖范围：
-- keys：键名 / 修饰键规范（对齐 macOS 词表 + command→Ctrl 决策）；
+- keys：键名 / 修饰键规范（Windows 修饰键与快捷键）；
 - uia_tree：角色映射 / 语义优先级 / 输出预算选择；
 - png：PNG 编码结构（zlib 往返校验）；
 - capture：截图坐标映射（越界拒绝）；
@@ -41,24 +41,23 @@ def test_key_normalization_and_vk_lookup() -> None:
     assert keys.key_vk("return") == 0x0D
     assert keys.key_vk("a") == 0x41
     assert keys.key_vk("7") == 0x37
-    assert keys.key_vk("pagedown") is None  # 与 macOS 版键表一致，不做超集
+    assert keys.key_vk("pagedown") is None  # 未支持的键明确拒绝
     assert keys.is_extended_key(0x25) is True  # left
     assert keys.is_extended_key(0x41) is False  # A
 
 
 def test_modifier_aliases_and_windows_mapping() -> None:
-    assert keys.normalize_modifiers(["cmd", "SHIFT", "alt", "ctrl"]) == [
-        "command",
-        "shift",
-        "option",
+    assert keys.normalize_modifiers(["ctrl", "SHIFT", "alt"]) == [
         "control",
+        "shift",
+        "alt",
     ]
     # 重复项去重且保持首次出现顺序
     assert keys.normalize_modifiers(["ctrl", "control"]) == ["control"]
     assert keys.normalize_modifiers(["bogus"]) is None
-    # command 有意映射为 Ctrl（意图对齐 Windows 快捷键）
-    assert keys.modifier_vk("command") == keys.modifier_vk("control") == 0x11
-    assert keys.modifier_vk("option") == 0x12
+    # 修饰键直接映射到 Windows 虚拟键。
+    assert keys.modifier_vk("control") == 0x11
+    assert keys.modifier_vk("alt") == 0x12
     assert keys.modifier_vk("win") == 0x5B
 
 
@@ -206,7 +205,7 @@ def test_screenshot_mapping_global_point() -> None:
     )
     assert mapping.global_point(800, 600) == (500.0, 380.0)
     assert mapping.global_point(0, 0) == (100.0, 80.0)
-    # 越界（对齐 macOS 版语义）
+    # 越界（对齐 Windows 版语义）
     assert mapping.global_point(1600, 0) is None
     assert mapping.global_point(0, 1200) is None
     assert mapping.global_point(-1, 5) is None
