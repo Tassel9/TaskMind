@@ -159,7 +159,7 @@ class ComputerLeaseHook(ToolHook):
     归属到该 Run，并在 Run 结束时清除。
 
     ``session_starter``：由 composition root 注入的异步 callable
-    （MacOSComputerRuntime.begin_session_rpc），负责通知 Native helper 显式
+    （ComputerHelperRuntime.begin_session_rpc），负责通知 Native helper 显式
     ``begin_session``。缺省时回退到 Python 侧同步 begin。
     """
 

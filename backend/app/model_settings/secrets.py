@@ -1,8 +1,7 @@
-"""模型API Key的安全存储边界。"""
+"""模型 API Key 的 Windows 凭据管理器存储边界。"""
 
 from __future__ import annotations
 
-import subprocess
 import sys
 from typing import Protocol
 
@@ -15,59 +14,51 @@ class ModelSecretStore(Protocol):
     def set(self, provider: str, value: str) -> None: ...
 
 
-class MacOSKeychainSecretStore:
-    """通过macOS Keychain保存密钥，不把密钥写入项目或JSON。"""
+class WindowsCredentialSecretStore:
+    """将密钥保存在当前 Windows 用户的凭据管理器，不写入项目或 JSON。"""
 
     service = "com.taskmind.desktop.model-api-key"
 
     def get(self, provider: str) -> str | None:
-        if sys.platform != "darwin":
+        if sys.platform != "win32":
             return None
-        result = subprocess.run(  # noqa: S603 - 固定绝对路径与参数数组
-            [
-                "/usr/bin/security",
-                "find-generic-password",
-                "-a",
-                provider,
-                "-s",
-                self.service,
-                "-w",
-            ],
-            capture_output=True,
-            check=False,
-            text=True,
-            timeout=5,
-        )
-        if result.returncode != 0:
-            return None
-        return result.stdout.strip() or None
+        import pywintypes
+        import win32cred
+
+        try:
+            credential = win32cred.CredRead(
+                f"{self.service}/{provider}", win32cred.CRED_TYPE_GENERIC
+            )
+        except pywintypes.error as exc:
+            if exc.winerror == 1168:  # ERROR_NOT_FOUND
+                return None
+            raise RuntimeError("Windows 凭据管理器读取失败") from None
+        blob = credential["CredentialBlob"]
+        if isinstance(blob, bytes):
+            return blob.decode("utf-16-le") or None
+        return str(blob) or None
 
     def set(self, provider: str, value: str) -> None:
-        if sys.platform != "darwin":
-            raise RuntimeError("model API keys require macOS Keychain")
+        if sys.platform != "win32":
+            raise RuntimeError(
+                "模型密钥保存需要 Windows 凭据管理器；其他环境请使用环境变量"
+            )
         normalized = value.strip()
         if not normalized:
             raise ValueError("api key cannot be empty")
-        result = subprocess.run(  # noqa: S603 - 固定绝对路径且不经过shell
-            [
-                "/usr/bin/security",
-                "add-generic-password",
-                "-U",
-                "-a",
-                provider,
-                "-s",
-                self.service,
-                "-w",
-                normalized,
-            ],
-            capture_output=True,
-            check=False,
-            text=True,
-            timeout=10,
-        )
-        if result.returncode != 0:
-            message = result.stderr.strip() or "macOS Keychain write failed"
-            raise RuntimeError(message)
+        import pywintypes
+        import win32cred
+
+        try:
+            win32cred.CredWrite({
+                "Type": win32cred.CRED_TYPE_GENERIC,
+                "TargetName": f"{self.service}/{provider}",
+                "UserName": provider,
+                "CredentialBlob": normalized,
+                "Persist": win32cred.CRED_PERSIST_LOCAL_MACHINE,
+            })
+        except pywintypes.error:
+            raise RuntimeError("Windows 凭据管理器写入失败") from None
 
 
-__all__ = ["MacOSKeychainSecretStore", "ModelSecretStore"]
+__all__ = ["ModelSecretStore", "WindowsCredentialSecretStore"]

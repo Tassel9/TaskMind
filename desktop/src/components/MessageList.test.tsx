@@ -128,7 +128,7 @@ describe('MessageList', () => {
           {
             role: 'tool',
             tool_call_id: 'c1',
-            content: '{"success":true,"app":"Notes","bundle_id":"com.apple.Notes"}',
+            content: '{"success":true,"app":"Notes","bundle_id":"notepad.exe"}',
           },
           {
             role: 'assistant',

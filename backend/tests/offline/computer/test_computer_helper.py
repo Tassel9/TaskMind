@@ -1,7 +1,7 @@
-"""MacOSHelperClient / MacOSComputerRuntime V0 测试。
+"""ComputerHelperClient / ComputerHelperRuntime V0 测试。
 
 使用测试用假 helper（tests/fixtures/fake_computer_helper.py）实现同样的
-JSON Lines 协议，不需要 Swift 构建、不需要任何 macOS 权限。
+JSON Lines 协议，不需要 原生构建、不需要任何 Windows 权限。
 
 覆盖（对应需求 11）：
 1-3. start / ping / system_info
@@ -12,7 +12,7 @@ JSON Lines 协议，不需要 Swift 构建、不需要任何 macOS 权限。
 8. helper 意外退出时 pending Future 被 reject
 9. malformed response / 非 JSON / 未知 id 被正确处理
 10. Application close 会关闭已启动的 helper
-+ MacOSComputerRuntime 生命周期由 Application 正确启动和关闭。
++ ComputerHelperRuntime 生命周期由 Application 正确启动和关闭。
 """
 
 from __future__ import annotations
@@ -26,12 +26,12 @@ from pydantic import SecretStr
 
 from app.application import Application
 from app.computer import (
+    ComputerHelperClient,
     ComputerHelperError,
     ComputerHelperProcessError,
     ComputerHelperProtocolError,
+    ComputerHelperRuntime,
     ComputerLeaseManager,
-    MacOSComputerRuntime,
-    MacOSHelperClient,
 )
 from app.models.adapter import ModelAdapter
 from app.models.config import ModelSettings, ProviderConfig
@@ -55,9 +55,9 @@ def _helper_command() -> tuple[str, tuple[str, ...]]:
     return sys.executable, (str(script),)
 
 
-def _make_client() -> MacOSHelperClient:
+def _make_client() -> ComputerHelperClient:
     exe, args = _helper_command()
-    return MacOSHelperClient(exe, helper_args=args)
+    return ComputerHelperClient(exe, helper_args=args)
 
 
 # ---------------------------------------------------------------------------
@@ -82,7 +82,7 @@ async def test_system_info() -> None:
     await client.start()
     try:
         result = await client.call("system_info", {})
-        assert result["platform"] == "macos"
+        assert result["platform"] == "win32"
         assert result["helper_version"] == "0.0.1-test"
         assert result["process_id"] > 0
     finally:
@@ -132,7 +132,7 @@ async def test_concurrent_calls_correlate_correctly() -> None:
         )
         assert results[0] == {"ok": True}
         assert results[1]["received_id"] == 2
-        assert results[2]["platform"] == "macos"
+        assert results[2]["platform"] == "win32"
         assert results[2]["process_id"] > 0
         assert results[3]["received_id"] == 4
     finally:
@@ -211,7 +211,7 @@ async def test_helper_crash_rejects_pending() -> None:
 
 async def test_observe_recovers_dead_helper_as_a_new_safe_request(tmp_path) -> None:
     client = _make_client()
-    runtime = MacOSComputerRuntime(client, screenshot_dir=tmp_path)
+    runtime = ComputerHelperRuntime(client, screenshot_dir=tmp_path)
     runtime.begin_session("test-run")
     await runtime.start()
     try:
@@ -318,9 +318,9 @@ async def test_open_app_transport_returns_result() -> None:
     client = _make_client()
     await client.start()
     try:
-        result = await client.call("open_app", {"app": "TextEdit"})
-        assert result["app"] == "TextEdit"
-        assert result["bundle_id"] == "com.example.TextEdit"
+        result = await client.call("open_app", {"app": "Notepad"})
+        assert result["app"] == "Notepad"
+        assert result["bundle_id"] == "com.example.Notepad"
         assert result["process_id"] == 4242
     finally:
         await client.close()
@@ -353,13 +353,13 @@ async def test_open_app_concurrent_with_ping() -> None:
 
 
 # ---------------------------------------------------------------------------
-# MacOSComputerRuntime 骨架
+# ComputerHelperRuntime 骨架
 # ---------------------------------------------------------------------------
 
 
-async def test_macos_runtime_lifecycle_start_close() -> None:
+async def test_helper_runtime_lifecycle_start_close() -> None:
     client = _make_client()
-    runtime = MacOSComputerRuntime(client)
+    runtime = ComputerHelperRuntime(client)
     assert runtime.helper_client is client
 
     await runtime.start()
@@ -432,9 +432,9 @@ async def _build_application(tmp_path, *, computer_runtime):
     return application
 
 
-async def test_application_start_starts_macos_runtime(tmp_path) -> None:
+async def test_application_start_starts_helper_runtime(tmp_path) -> None:
     client = _make_client()
-    runtime = MacOSComputerRuntime(client)
+    runtime = ComputerHelperRuntime(client)
     app = await _build_application(tmp_path, computer_runtime=runtime)
     try:
         assert app.computer_runtime is runtime
@@ -446,7 +446,7 @@ async def test_application_start_starts_macos_runtime(tmp_path) -> None:
 
 async def test_application_close_closes_helper(tmp_path) -> None:
     client = _make_client()
-    runtime = MacOSComputerRuntime(client)
+    runtime = ComputerHelperRuntime(client)
     app = await _build_application(tmp_path, computer_runtime=runtime)
     process = client._process
     assert process is not None and process.returncode is None
@@ -458,7 +458,7 @@ async def test_application_close_closes_helper(tmp_path) -> None:
 async def test_application_close_releases_machine_lease(tmp_path) -> None:
     client = _make_client()
     app = await _build_application(
-        tmp_path, computer_runtime=MacOSComputerRuntime(client)
+        tmp_path, computer_runtime=ComputerHelperRuntime(client)
     )
     assert app.computer_lease is not None
     lock_path = app.computer_lease.lock_path

@@ -1,11 +1,7 @@
-"""协议方法实现：与 Swift helper（ProtocolHandlers/AppBackend/ObservationBuilder）
-逐方法对齐，Python 端（app.computer.macos.MacOSComputerRuntime）无需感知平台。
+"""Windows helper 的协议方法实现。
 
-错误以 ``HelperError(code, message)`` 抛出，由 ``__main__`` 统一转为
-``{"error": {"code", "message"}}`` 响应；结构化错误码与 macOS 版一致
-（session_not_active / session_mismatch / stale_observation /
-element_not_found / action_not_supported / editable_target_required /
-element_not_editable / focus_failed / input_event_failed / ...）。
+方法返回 JSON 可序列化结果；操作失败使用结构化错误码，
+由 ComputerHelperRuntime 转换为工具结果和恢复提示。
 """
 
 from __future__ import annotations
@@ -42,7 +38,7 @@ __all__ = [
 
 
 class HelperError(Exception):
-    """协议级结构化错误（code 与 macOS 版词表一致）。"""
+    """协议级结构化错误。"""
 
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message)
@@ -258,7 +254,7 @@ def handle_observe(
     active_window: dict[str, Any] | None = windows[0] if windows else None
     active_window_ref = "w1" if windows else None
 
-    # 元素树：只从主窗口采集（对齐 macOS：focused window 为根）。
+    # 元素树：只从主窗口采集（以焦点窗口为根）。
     elements: list[dict[str, Any]] = []
     focused_element_ref: str | None = None
     truncated = False
@@ -491,7 +487,7 @@ def handle_click_element(
             f"element {element_ref} has no actionable UIA pattern",
         )
     else:
-        # 后台失败 → 恢复已批准目标到前台后重试一次（对齐 macOS）。
+        # 后台失败 → 恢复已批准目标到前台后重试一次。
         if not state.restore_recorded_target():
             raise HelperError(
                 "background_action_failed",
@@ -556,7 +552,7 @@ def handle_click_coordinate(
 
 
 # ---------------------------------------------------------------------------
-# 输入目标准备（type / key 共用；对齐 macOS prepareExactInputTarget）
+# 输入目标准备（type / key 共用）
 # ---------------------------------------------------------------------------
 
 

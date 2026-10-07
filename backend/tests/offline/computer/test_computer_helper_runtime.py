@@ -1,8 +1,6 @@
-"""MacOSComputerRuntime 原生能力的离线 Stub 测试。
+"""ComputerHelperRuntime 原生能力的离线 Stub 测试。
 
-使用 stub HelperClient，不启动真实 GUI App、不调用 NSWorkspace /
-AXUIElement / AXPress / CGEvent、不需要 Accessibility / Screen Recording
-权限。
+使用 stub HelperClient，不启动真实 GUI App，不调用系统界面或输入 API。
 
 覆盖：
 V1 open_app：
@@ -54,10 +52,10 @@ from app.computer import (
     ComputerHelperError,
     ComputerHelperProcessError,
     ComputerHelperProtocolError,
+    ComputerHelperRuntime,
     CoordinateTarget,
     Element,
     ElementTarget,
-    MacOSComputerRuntime,
     Observation,
     VerificationStatus,
 )
@@ -99,8 +97,8 @@ class StubHelperClient:
         return self.result if self.result is not None else {}
 
 
-def _runtime(stub: StubHelperClient) -> MacOSComputerRuntime:
-    runtime = MacOSComputerRuntime(stub)  # type: ignore[arg-type]
+def _runtime(stub: StubHelperClient) -> ComputerHelperRuntime:
+    runtime = ComputerHelperRuntime(stub)  # type: ignore[arg-type]
     # V2：所有请求都需要 Run-scoped active session；测试用固定 run 建立。
     runtime.begin_session("test-run")
     # Snapshot 单一真源在 ComputerSession.current_snapshot。
@@ -114,18 +112,18 @@ def _runtime(stub: StubHelperClient) -> MacOSComputerRuntime:
     return runtime
 
 
-def _snapshot(runtime: MacOSComputerRuntime) -> Observation | None:
+def _snapshot(runtime: ComputerHelperRuntime) -> Observation | None:
     session = runtime._session_manager.get_active()
     return session.current_snapshot if session else None
 
 
-def _attach(runtime: MacOSComputerRuntime, observation: Observation) -> None:
+def _attach(runtime: ComputerHelperRuntime, observation: Observation) -> None:
     runtime._session_manager.require_active().attach_snapshot(observation)
 
 
 async def test_begin_session_rpc_requires_explicit_native_acceptance() -> None:
     stub = StubHelperClient(per_method={"begin_session": {"accepted": True}})
-    runtime = MacOSComputerRuntime(stub)  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(stub)  # type: ignore[arg-type]
 
     session = await runtime.begin_session_rpc("run-a")
     repeated = await runtime.begin_session_rpc("run-a")
@@ -140,7 +138,7 @@ async def test_begin_session_rpc_requires_explicit_native_acceptance() -> None:
 async def test_begin_session_rpc_fails_closed_without_native_acceptance(
     result: dict,
 ) -> None:
-    runtime = MacOSComputerRuntime(  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(  # type: ignore[arg-type]
         StubHelperClient(per_method={"begin_session": result})
     )
 
@@ -158,16 +156,16 @@ async def test_begin_session_rpc_fails_closed_without_native_acceptance(
 async def test_open_app_sends_request_to_helper() -> None:
     stub = StubHelperClient(
         result={
-            "app": "TextEdit",
-            "bundle_id": "com.apple.TextEdit",
+            "app": "Notepad",
+            "bundle_id": "notepad.exe",
             "process_id": 4242,
         }
     )
     runtime = _runtime(stub)
 
-    result = await runtime.open_app("TextEdit")
+    result = await runtime.open_app("Notepad")
 
-    assert stub.calls == [("open_app", {"app": "TextEdit"})]
+    assert stub.calls == [("open_app", {"app": "Notepad"})]
     assert result.success is True
 
 
@@ -179,20 +177,20 @@ async def test_open_app_sends_request_to_helper() -> None:
 async def test_open_app_converts_to_action_result() -> None:
     stub = StubHelperClient(
         result={
-            "app": "TextEdit",
-            "bundle_id": "com.apple.TextEdit",
+            "app": "Notepad",
+            "bundle_id": "notepad.exe",
             "process_id": 4242,
         }
     )
     runtime = _runtime(stub)
 
-    result = await runtime.open_app("TextEdit")
+    result = await runtime.open_app("Notepad")
 
     assert isinstance(result, ActionResult)
     assert result.success is True
     assert result.action is ActionName.OPEN_APP
-    assert result.metadata["app"] == "TextEdit"
-    assert result.metadata["bundle_id"] == "com.apple.TextEdit"
+    assert result.metadata["app"] == "Notepad"
+    assert result.metadata["bundle_id"] == "notepad.exe"
     assert result.metadata["process_id"] == 4242
     assert result.metadata["frontmost_verified"] is False
     assert result.error is None
@@ -203,7 +201,7 @@ async def test_open_app_preserves_frontmost_verification() -> None:
         StubHelperClient(
             result={
                 "app": "Notes",
-                "bundle_id": "com.apple.Notes",
+                "bundle_id": "notepad.exe",
                 "process_id": 4242,
                 "frontmost_verified": True,
             }
@@ -220,7 +218,7 @@ async def test_open_app_launch_success_does_not_require_frontmost() -> None:
         StubHelperClient(
             result={
                 "app": "Notes",
-                "bundle_id": "com.apple.Notes",
+                "bundle_id": "notepad.exe",
                 "process_id": 4242,
                 "launch_status": "running",
                 "activation_status": "not_frontmost",
@@ -240,17 +238,17 @@ async def test_open_app_bundle_id_hint() -> None:
     # 以 bundle id 形式传入也要原样转发给 helper。
     stub = StubHelperClient(
         result={
-            "app": "com.apple.TextEdit",
-            "bundle_id": "com.apple.TextEdit",
+            "app": "notepad.exe",
+            "bundle_id": "notepad.exe",
             "process_id": 7,
         }
     )
     runtime = _runtime(stub)
 
-    result = await runtime.open_app("com.apple.TextEdit")
+    result = await runtime.open_app("notepad.exe")
 
-    assert stub.calls == [("open_app", {"app": "com.apple.TextEdit"})]
-    assert result.metadata["bundle_id"] == "com.apple.TextEdit"
+    assert stub.calls == [("open_app", {"app": "notepad.exe"})]
+    assert result.metadata["bundle_id"] == "notepad.exe"
 
 
 # ---------------------------------------------------------------------------
@@ -259,19 +257,19 @@ async def test_open_app_bundle_id_hint() -> None:
 
 
 async def test_open_app_helper_error_propagates() -> None:
-    stub = StubHelperClient(error=ComputerHelperError("app_not_found: TextEdit"))
+    stub = StubHelperClient(error=ComputerHelperError("app_not_found: Notepad"))
     runtime = _runtime(stub)
 
     with pytest.raises(ComputerHelperError, match="app_not_found"):
-        await runtime.open_app("TextEdit")
+        await runtime.open_app("Notepad")
 
 
 async def test_open_app_launch_failed_propagates() -> None:
-    stub = StubHelperClient(error=ComputerHelperError("app_launch_failed: TextEdit"))
+    stub = StubHelperClient(error=ComputerHelperError("app_launch_failed: Notepad"))
     runtime = _runtime(stub)
 
     with pytest.raises(ComputerHelperError, match="app_launch_failed"):
-        await runtime.open_app("TextEdit")
+        await runtime.open_app("Notepad")
 
 
 # ---------------------------------------------------------------------------
@@ -301,8 +299,8 @@ async def test_open_app_rejects_empty_app() -> None:
 def _observe_result() -> dict:
     return {
         "active_app": {
-            "name": "TextEdit",
-            "bundle_id": "com.apple.TextEdit",
+            "name": "Notepad",
+            "bundle_id": "notepad.exe",
             "process_id": 1234,
         },
         "active_window": {
@@ -393,8 +391,8 @@ async def test_observe_converts_active_app() -> None:
     obs = await runtime.observe()
 
     assert obs.active_app is not None
-    assert obs.active_app.name == "TextEdit"
-    assert obs.active_app.bundle_id == "com.apple.TextEdit"
+    assert obs.active_app.name == "Notepad"
+    assert obs.active_app.bundle_id == "notepad.exe"
     assert obs.active_app.pid == 1234
 
 
@@ -404,7 +402,7 @@ async def test_observe_converts_stable_target_and_element_stats() -> None:
         {
             "target": {
                 "name": "Notes",
-                "bundle_id": "com.apple.Notes",
+                "bundle_id": "notepad.exe",
                 "process_id": 9876,
             },
             "target_is_frontmost": False,
@@ -478,7 +476,7 @@ async def test_observe_permission_error_propagates() -> None:
     stub = StubHelperClient(
         error=ComputerHelperError(
             "accessibility_permission_required: "
-            "macOS Accessibility permission is required"
+            "Windows Accessibility permission is required"
         )
     )
     runtime = _runtime(stub)
@@ -493,7 +491,7 @@ async def test_observe_no_active_window() -> None:
             result={
                 "active_app": {
                     "name": "Finder",
-                    "bundle_id": "com.apple.finder",
+                    "bundle_id": "explorer.exe",
                     "process_id": 1,
                 },
                 "active_window": None,
@@ -514,8 +512,8 @@ async def test_open_app_still_works_after_observe() -> None:
         per_method={
             "observe": _observe_result(),
             "open_app": {
-                "app": "TextEdit",
-                "bundle_id": "com.apple.TextEdit",
+                "app": "Notepad",
+                "bundle_id": "notepad.exe",
                 "process_id": 5,
             },
         }
@@ -523,9 +521,9 @@ async def test_open_app_still_works_after_observe() -> None:
     runtime = _runtime(stub)
 
     obs = await runtime.observe()
-    assert obs.active_app is not None and obs.active_app.name == "TextEdit"
+    assert obs.active_app is not None and obs.active_app.name == "Notepad"
 
-    result = await runtime.open_app("TextEdit")
+    result = await runtime.open_app("Notepad")
     assert result.success is True
     assert result.metadata["process_id"] == 5
     assert [m for m, _ in stub.calls] == ["observe", "open_app"]
@@ -609,8 +607,8 @@ async def test_click_does_not_break_observe_and_open_app() -> None:
             "observe": _observe_result(),
             "click_element": _click_result(),
             "open_app": {
-                "app": "TextEdit",
-                "bundle_id": "com.apple.TextEdit",
+                "app": "Notepad",
+                "bundle_id": "notepad.exe",
                 "process_id": 5,
             },
         }
@@ -618,14 +616,14 @@ async def test_click_does_not_break_observe_and_open_app() -> None:
     runtime = _runtime(stub)
 
     obs = await runtime.observe()
-    assert obs.active_app is not None and obs.active_app.name == "TextEdit"
+    assert obs.active_app is not None and obs.active_app.name == "Notepad"
 
     click_result = await runtime.click(
         ElementTarget(observation_id="obs-1", element_ref="e1")
     )
     assert click_result.action is ActionName.CLICK
 
-    open_result = await runtime.open_app("TextEdit")
+    open_result = await runtime.open_app("Notepad")
     assert open_result.success is True
 
     assert [m for m, _ in stub.calls] == [
@@ -636,7 +634,7 @@ async def test_click_does_not_break_observe_and_open_app() -> None:
 
 
 # ---------------------------------------------------------------------------
-# V5 type（CGEvent Unicode 文本输入）
+# V5 type（Unicode 文本输入）
 # ---------------------------------------------------------------------------
 
 
@@ -795,7 +793,7 @@ async def test_type_permission_error_propagates() -> None:
     stub = StubHelperClient(
         error=ComputerHelperError(
             "accessibility_permission_required: "
-            "macOS Accessibility permission is required"
+            "Windows Accessibility permission is required"
         )
     )
     runtime = _runtime(stub)
@@ -811,8 +809,8 @@ async def test_type_does_not_break_others() -> None:
             "click_element": _click_result(),
             "type_text": _type_result(5),
             "open_app": {
-                "app": "TextEdit",
-                "bundle_id": "com.apple.TextEdit",
+                "app": "Notepad",
+                "bundle_id": "notepad.exe",
                 "process_id": 5,
             },
         }
@@ -823,7 +821,7 @@ async def test_type_does_not_break_others() -> None:
     await runtime.click(ElementTarget(observation_id="obs-1", element_ref="e1"))
     await runtime.observe()
     type_result = await runtime.type("hello")
-    await runtime.open_app("TextEdit")
+    await runtime.open_app("Notepad")
 
     assert type_result.metadata["characters"] == 5
     assert [m for m, _ in stub.calls] == [
@@ -836,7 +834,7 @@ async def test_type_does_not_break_others() -> None:
 
 
 # ---------------------------------------------------------------------------
-# V6 key（CGEvent keyDown/keyUp）
+# V6 key（按键按下与释放）
 # ---------------------------------------------------------------------------
 
 
@@ -863,17 +861,17 @@ async def test_key_calls_key_press() -> None:
 
 
 async def test_key_passes_modifiers_and_converts_action_result() -> None:
-    stub = StubHelperClient(result=_key_result("a", ["command", "shift"]))
+    stub = StubHelperClient(result=_key_result("a", ["control", "shift"]))
     runtime = _runtime(stub)
 
-    result = await runtime.key("a", ("cmd", "shift"))
+    result = await runtime.key("a", ("ctrl", "shift"))
 
     assert stub.calls == [
         (
             "key_press",
             {
                 "key": "a",
-                "modifiers": ["cmd", "shift"],
+                "modifiers": ["ctrl", "shift"],
                 "expected_observation_id": "obs-current",
             },
         )
@@ -883,7 +881,7 @@ async def test_key_passes_modifiers_and_converts_action_result() -> None:
     assert result.action is ActionName.KEY
     assert result.metadata == {
         "key": "a",
-        "modifiers": ["command", "shift"],
+        "modifiers": ["control", "shift"],
     }
 
 
@@ -940,7 +938,7 @@ async def test_key_rejects_empty_or_non_string_key(key: object) -> None:
 
 @pytest.mark.parametrize(
     "modifiers",
-    [["command"], ("command", 1)],
+    [["control"], ("control", 1)],
 )
 async def test_key_rejects_invalid_modifier_tuple(
     modifiers: object,
@@ -961,8 +959,8 @@ async def test_key_does_not_break_existing_operations() -> None:
             "type_text": _type_result(5),
             "key_press": _key_result("tab"),
             "open_app": {
-                "app": "TextEdit",
-                "bundle_id": "com.apple.TextEdit",
+                "app": "Notepad",
+                "bundle_id": "notepad.exe",
                 "process_id": 5,
             },
         }
@@ -975,7 +973,7 @@ async def test_key_does_not_break_existing_operations() -> None:
     await runtime.type("hello")
     await runtime.observe()
     key_result = await runtime.key("tab")
-    await runtime.open_app("TextEdit")
+    await runtime.open_app("Notepad")
 
     assert key_result.action is ActionName.KEY
     assert [method for method, _ in stub.calls] == [
@@ -1052,7 +1050,7 @@ async def test_observe_converts_multiple_windows_and_screenshot(tmp_path) -> Non
         }
     )
     stub = StubHelperClient(result=payload)
-    runtime = MacOSComputerRuntime(stub, screenshot_dir=tmp_path)  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(stub, screenshot_dir=tmp_path)  # type: ignore[arg-type]
     runtime.begin_session("test-run")
     observation = await runtime.observe()
     assert [window.ref for window in observation.windows] == ["w1", "w2"]
@@ -1065,7 +1063,7 @@ async def test_observe_converts_multiple_windows_and_screenshot(tmp_path) -> Non
 
 async def test_observe_without_screenshot_does_not_send_path(tmp_path) -> None:
     stub = StubHelperClient(result=_observe_result())
-    runtime = MacOSComputerRuntime(stub, screenshot_dir=tmp_path)  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(stub, screenshot_dir=tmp_path)  # type: ignore[arg-type]
     runtime.begin_session("test-run")
     observation = await runtime.observe(include_screenshot=False)
     assert observation.screenshot_ref is None
@@ -1076,7 +1074,7 @@ async def test_observe_without_screenshot_does_not_send_path(tmp_path) -> None:
 async def test_screenshot_error_keeps_structured_observation(tmp_path) -> None:
     payload = _observe_result()
     payload["screenshot_error"] = {"code": "screen_recording_permission_required"}
-    runtime = MacOSComputerRuntime(  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(  # type: ignore[arg-type]
         StubHelperClient(result=payload), screenshot_dir=tmp_path
     )
     runtime.begin_session("test-run")
@@ -1096,7 +1094,7 @@ async def test_successful_mutations_invalidate_latest_observation(tmp_path) -> N
             "scroll": {"delta_x": 0, "delta_y": 1},
         }
     )
-    runtime = MacOSComputerRuntime(stub, screenshot_dir=tmp_path)  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(stub, screenshot_dir=tmp_path)  # type: ignore[arg-type]
     runtime.begin_session("test-run")
     await runtime.observe(False)
     assert _snapshot(runtime) is not None
@@ -1108,7 +1106,7 @@ async def test_successful_mutations_invalidate_latest_observation(tmp_path) -> N
     for mutation in (
         runtime.key("enter"),
         runtime.scroll(delta_y=1),
-        runtime.open_app("TextEdit"),
+        runtime.open_app("Notepad"),
     ):
         await runtime.observe(False)
         await mutation

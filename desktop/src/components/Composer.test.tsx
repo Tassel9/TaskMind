@@ -56,7 +56,7 @@ describe('Composer', () => {
     expect(html).not.toContain('composer__send" disabled')
   })
 
-  it('输入框 footer 不渲染 ⌘K 入口（快捷键仍保留触发面板）', () => {
+  it('输入框 footer 不渲染 CtrlK 入口（快捷键仍保留触发面板）', () => {
     const html = renderToStaticMarkup(
       <Composer
         disabled={false}
@@ -68,7 +68,7 @@ describe('Composer', () => {
       />,
     )
     expect(html).not.toContain('composer__cmd')
-    expect(html).not.toContain('⌘K')
+    expect(html).not.toContain('CtrlK')
     expect(html).not.toContain('composer-commands__item')
   })
 })

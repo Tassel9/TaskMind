@@ -1,4 +1,4 @@
-"""真实 macOS ComputerRuntime：通过 Swift helper 调用系统原生能力。"""
+"""Windows ComputerRuntime：通过 Python helper 调用系统原生能力。"""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ from pathlib import Path
 
 from . import errors as computer_errors
 from .helper_client import (
+    ComputerHelperClient,
     ComputerHelperError,
     ComputerHelperProcessError,
     ComputerHelperProtocolError,
-    MacOSHelperClient,
 )
 from .models import (
     ActionName,
@@ -33,8 +33,8 @@ from .session import (
     ComputerSessionManager,
 )
 
-__all__ = ["MacOSComputerRuntime"]
-logger = logging.getLogger("taskmind.computer.macos")
+__all__ = ["ComputerHelperRuntime"]
+logger = logging.getLogger("taskmind.computer.helper_runtime")
 _TEXT_ENTRY_ROLES = frozenset({"text_area", "text_field", "combo_box"})
 
 # 结构化错误码 → 模型友好的 recovery hint。
@@ -117,12 +117,12 @@ def _active_app(data: object) -> ActiveApp | None:
     )
 
 
-class MacOSComputerRuntime:
-    """把 ComputerRuntime 契约委托给长驻 Swift helper。"""
+class ComputerHelperRuntime:
+    """把 ComputerRuntime 契约委托给长驻 Windows helper。"""
 
     def __init__(
         self,
-        helper_client: MacOSHelperClient,
+        helper_client: ComputerHelperClient,
         screenshot_dir: Path | None = None,
         session_manager: ComputerSessionManager | None = None,
     ) -> None:
@@ -341,7 +341,7 @@ class MacOSComputerRuntime:
             screenshot_ref = None
         if result.get("screenshot_error"):
             logger.warning(
-                "macOS screenshot unavailable: %s", result["screenshot_error"]
+                "computer screenshot unavailable: %s", result["screenshot_error"]
             )
         observation = Observation(
             id=observation_id,

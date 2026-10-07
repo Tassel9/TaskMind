@@ -25,7 +25,7 @@ const PROVIDER_LABELS: Record<ModelProvider, string> = {
 
 type ProviderDraft = ProviderModelSettingsUpdate & {
   configured: boolean
-  keySource: 'keychain' | 'environment' | 'none'
+  keySource: 'credential_manager' | 'environment' | 'none'
 }
 
 export default function ModelSettingsPanel(): React.JSX.Element {
@@ -212,7 +212,7 @@ export default function ModelSettingsPanel(): React.JSX.Element {
               placeholder={current.configured ? `已配置（${keySourceLabel(current.keySource)}）` : '输入 API Key'}
               onChange={(event) => updateCurrent({ api_key: event.target.value })}
             />
-            <small>留空会保留现有密钥；新密钥保存到 macOS Keychain。</small>
+            <small>留空会保留现有密钥；新密钥保存到 Windows 凭据管理器。</small>
           </label>
         </div>
         <div className="model-actions model-actions--secondary">
@@ -326,7 +326,7 @@ function stripDraft({ configured: _configured, keySource: _keySource, ...item }:
 }
 
 function keySourceLabel(source: ProviderDraft['keySource']): string {
-  return source === 'keychain' ? '钥匙串' : source === 'environment' ? '环境变量' : '未设置'
+  return source === 'credential_manager' ? '钥匙串' : source === 'environment' ? '环境变量' : '未设置'
 }
 
 function errorMessage(reason: unknown): string {

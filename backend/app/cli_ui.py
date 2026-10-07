@@ -62,7 +62,7 @@ async def run_setup(
     providers = tuple(view["providers"])
 
     print_banner()
-    output_fn("首次设置 · 密钥保存到 macOS Keychain，非敏感配置保存到 .taskmind。")
+    output_fn("首次设置 · 密钥保存到 Windows 凭据管理器，非敏感配置保存到 .taskmind。")
     output_fn("")
     try:
         selected = _choose_provider(

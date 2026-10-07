@@ -12,7 +12,7 @@ from pydantic import SecretStr
 
 from app.agent.events import AgentEvent, AgentEventType
 from app.application import Application
-from app.computer import ComputerHostStatus, MacOSComputerRuntime
+from app.computer import ComputerHelperRuntime, ComputerHostStatus
 from app.models.adapter import ModelAdapter
 from app.models.config import ModelSettings, ProviderConfig
 from app.models.registry import ModelAdapterRegistry
@@ -136,10 +136,10 @@ def _available_status() -> ComputerHostStatus:
     return ComputerHostStatus(
         enabled=True,
         available=True,
-        platform="macos",
+        platform="win32",
         reason=None,
         helper_path="/tmp/helper",
-        runtime="macos",
+        runtime="windows",
     )
 
 
@@ -148,8 +148,8 @@ def _observation_payload(obs_id: str = "obs-1") -> dict:
         "id": obs_id,
         "created_at": "2026-08-20T00:00:00+00:00",
         "active_app": {
-            "name": "TextEdit",
-            "bundle_id": "com.apple.TextEdit",
+            "name": "Notepad",
+            "bundle_id": "notepad.exe",
             "pid": 100,
         },
         "active_window": {
@@ -230,14 +230,14 @@ async def test_status_runtime_available(tmp_path) -> None:
             "screen_capture_status": {"granted": True},
         }
     )
-    runtime = MacOSComputerRuntime(stub)  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(stub)  # type: ignore[arg-type]
     app = await _build_application(
         tmp_path, computer_runtime=runtime, computer_host_status=_available_status()
     )
     try:
         result = await computer_rpc.computer_status({}, _ctx(app))
         assert result["available"] is True
-        assert result["runtime"] == "macos"
+        assert result["runtime"] == "windows"
         assert result["permissions"] == {
             "accessibility": "granted",
             "screen_recording": "granted",
@@ -258,7 +258,7 @@ async def test_status_reports_missing_permissions(tmp_path) -> None:
             "screen_capture_status": {"granted": False},
         }
     )
-    runtime = MacOSComputerRuntime(stub)  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(stub)  # type: ignore[arg-type]
     app = await _build_application(
         tmp_path, computer_runtime=runtime, computer_host_status=_available_status()
     )
@@ -277,7 +277,7 @@ async def test_status_unknown_when_helper_errors(tmp_path) -> None:
             "screen_capture_status": RuntimeError("boom"),
         }
     )
-    runtime = MacOSComputerRuntime(stub)  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(stub)  # type: ignore[arg-type]
     app = await _build_application(
         tmp_path, computer_runtime=runtime, computer_host_status=_available_status()
     )
@@ -303,7 +303,7 @@ async def test_request_permission_accessibility(tmp_path) -> None:
             "screen_capture_status": {"granted": True},
         }
     )
-    runtime = MacOSComputerRuntime(stub)  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(stub)  # type: ignore[arg-type]
     app = await _build_application(
         tmp_path, computer_runtime=runtime, computer_host_status=_available_status()
     )
@@ -324,7 +324,7 @@ async def test_request_permission_screen_recording(tmp_path) -> None:
             "screen_capture_status": {"granted": True},
         }
     )
-    runtime = MacOSComputerRuntime(stub)  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(stub)  # type: ignore[arg-type]
     app = await _build_application(
         tmp_path, computer_runtime=runtime, computer_host_status=_available_status()
     )
@@ -461,7 +461,7 @@ async def test_latest_observation_none_when_no_observation(tmp_path) -> None:
 
 async def test_latest_observation_uses_lease_owner_when_no_run_id(tmp_path) -> None:
     stub = StubHelperClient()
-    runtime = MacOSComputerRuntime(stub)  # type: ignore[arg-type]
+    runtime = ComputerHelperRuntime(stub)  # type: ignore[arg-type]
     app = await _build_application(
         tmp_path, computer_runtime=runtime, computer_host_status=_available_status()
     )

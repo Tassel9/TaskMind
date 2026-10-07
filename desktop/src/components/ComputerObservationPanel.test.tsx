@@ -11,7 +11,7 @@ const obsId = 'a'.repeat(32)
 const observation: ComputerObservation = {
   id: obsId,
   created_at: null,
-  active_app: { name: 'TextEdit', bundle_id: 'com.apple.TextEdit', pid: 100 },
+  active_app: { name: 'Notepad', bundle_id: 'notepad.exe', pid: 100 },
   active_window: {
     ref: 'w1',
     title: 'Untitled',
@@ -56,7 +56,7 @@ describe('ComputerObservationPanel', () => {
         serverUrl="http://127.0.0.1:8000"
       />,
     )
-    expect(html).toContain('TextEdit')
+    expect(html).toContain('Notepad')
     expect(html).toContain('Untitled')
     expect(html).toContain('run-1')
     expect(html).toContain('e1')

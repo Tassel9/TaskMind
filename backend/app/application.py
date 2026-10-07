@@ -483,7 +483,7 @@ class Application:
             skill_store,
         )
 
-        # Computer Runtime 可注入真实 macOS 实现或测试 Fake；未注入则不注册，
+        # Computer Runtime 可注入真实 Windows 实现或测试 Fake；未注入则不注册，
         # 普通 CLI / Host 现有功能完全不受影响。
         computer_lease: ComputerLeaseManager | None = None
         computer_session: ComputerSessionManager | None = None
@@ -512,7 +512,7 @@ class Application:
             )
             register_computer_tools(tool_registry, self._computer_runtime)
             self.computer_runtime = self._computer_runtime
-            # 真实 MacOSComputerRuntime 才有显式 start / close；
+            # 真实 ComputerHelperRuntime 才有显式 start / close；
             # FakeComputerRuntime 没有 start，用 getattr 探测，不影响现有路径。
             start_runtime = getattr(self._computer_runtime, "start", None)
             if callable(start_runtime):
@@ -771,7 +771,7 @@ class Application:
         if self.computer_session is not None:
             self.computer_session.close()
         if self.computer_runtime is not None:
-            # 只在确实注入真实 MacOSComputerRuntime（有 close）时关闭 helper。
+            # 只在确实注入真实 ComputerHelperRuntime（有 close）时关闭 helper。
             close_runtime = getattr(self.computer_runtime, "close", None)
             if callable(close_runtime):
                 await close_runtime()

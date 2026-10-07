@@ -1,6 +1,6 @@
 """Computer Runtime V0 契约单元测试。
 
-全部为纯单元测试：不调用真实 macOS API、不需要 Accessibility /
+全部为纯单元测试：不调用真实 Windows API、不需要 Accessibility /
 Screen Recording 权限、不调用模型 API。
 """
 
@@ -31,7 +31,7 @@ from app.computer import (
 
 def test_observation_constructs_with_snapshot_fields() -> None:
     obs = Observation(
-        active_app=ActiveApp(name="Notes", bundle_id="com.apple.Notes", pid=123),
+        active_app=ActiveApp(name="Notes", bundle_id="notepad.exe", pid=123),
         active_window=Window(
             ref="w1",
             title="Todo",
@@ -45,7 +45,7 @@ def test_observation_constructs_with_snapshot_fields() -> None:
             ),
             Window(
                 ref="w2",
-                title="Safari",
+                title="Microsoft Edge",
                 bounds=Bounds(x=10, y=10, width=400, height=300),
             ),
         ),
@@ -210,8 +210,8 @@ async def test_fake_key() -> None:
     assert result.metadata["key"] == "enter"
     assert result.metadata["modifiers"] == ()
 
-    with_mods = await fake.key("a", modifiers=("command", "shift"))
-    assert with_mods.metadata["modifiers"] == ("command", "shift")
+    with_mods = await fake.key("a", modifiers=("control", "shift"))
+    assert with_mods.metadata["modifiers"] == ("control", "shift")
 
     with_ref = await fake.key("enter", element_ref="e2")
     assert with_ref.metadata["element_ref"] == "e2"

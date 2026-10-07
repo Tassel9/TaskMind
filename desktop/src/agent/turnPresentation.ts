@@ -95,7 +95,7 @@ function formatKeyShortcut(args: unknown): string {
     ? rawMods.filter((item): item is string => typeof item === 'string')
     : (argValue(args, 'modifiers')?.split(',') ?? [])
   const symbols: Record<string, string> = {
-    command: '⌘', cmd: '⌘', shift: '⇧', option: '⌥', alt: '⌥', control: '⌃', ctrl: '⌃',
+    shift: 'Shift', alt: 'Alt', control: 'Ctrl', ctrl: 'Ctrl', win: 'Win', super: 'Win', meta: 'Win',
   }
   const parts = mods.map((m) => symbols[m.trim()] ?? m.trim()).filter(Boolean)
   const prettyKey = key.length === 1 ? key.toUpperCase() : key.replace(/^(?:key|Key)/, '')

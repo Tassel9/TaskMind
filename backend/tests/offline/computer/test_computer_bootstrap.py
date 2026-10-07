@@ -1,124 +1,98 @@
-"""Computer bootstrap 测试：helper 解析顺序 / 开关 / 非 macOS / 缺 helper。"""
+"""Windows Computer bootstrap：开关、解释器优先级、依赖与平台边界。"""
 
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
-from app.computer.bootstrap import (
-    build_macos_computer,
-    computer_enabled,
-    current_platform,
-    resolve_helper_path,
-)
+import pytest
+
+import app.computer.bootstrap as bootstrap
+from app.computer import ComputerHelperRuntime, build_computer, computer_enabled
 
 
-def _make_executable(tmp_path: Path, name: str) -> Path:
+@pytest.fixture
+def windows_platform(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(bootstrap, "_windows_helper_missing_modules", lambda: [])
+    monkeypatch.delenv("TASKMIND_COMPUTER_ENABLED", raising=False)
+    monkeypatch.delenv("TASKMIND_WIN_HELPER_PYTHON", raising=False)
+
+
+def _interpreter(tmp_path: Path, name: str) -> Path:
     path = tmp_path / name
-    path.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    path.write_text("test interpreter", encoding="utf-8")
     path.chmod(0o755)
-    return path
+    return path.resolve()
 
 
-def _patch_dev_helper(monkeypatch, tmp_path: Path) -> Path:
-    dev = _make_executable(tmp_path, "dev-helper")
-    import app.computer.bootstrap as bootstrap
-
-    monkeypatch.setattr(bootstrap, "_DEFAULT_DEV_HELPER", dev)
-    return dev
-
-
-def test_explicit_helper_takes_priority(monkeypatch, tmp_path) -> None:
-    explicit = _make_executable(tmp_path, "explicit-helper")
-    env_helper = _make_executable(tmp_path, "env-helper")
-    monkeypatch.setenv("TASKMIND_MACOS_HELPER_PATH", str(env_helper))
-
-    assert resolve_helper_path(explicit) == explicit.resolve()
-    # 显式 > 环境变量。
-    assert resolve_helper_path(explicit) != env_helper.resolve()
+def test_explicit_interpreter_takes_priority(windows_platform, monkeypatch, tmp_path):
+    explicit = _interpreter(tmp_path, "explicit.exe")
+    fallback = _interpreter(tmp_path, "fallback.exe")
+    monkeypatch.setenv("TASKMIND_WIN_HELPER_PYTHON", str(fallback))
+    runtime, status = build_computer(helper_path=explicit)
+    assert isinstance(runtime, ComputerHelperRuntime)
+    assert runtime.helper_client.helper_path == explicit
+    assert runtime.helper_client.helper_args == ("-m", "app.computer.win_helper")
+    assert runtime.helper_client.cwd == str(bootstrap._BACKEND_ROOT)
+    assert status.available and status.runtime == "windows"
 
 
-def test_env_helper_fallback(monkeypatch, tmp_path) -> None:
-    env_helper = _make_executable(tmp_path, "env-helper")
-    monkeypatch.setenv("TASKMIND_MACOS_HELPER_PATH", str(env_helper))
-
-    assert resolve_helper_path(None) == env_helper.resolve()
-
-
-def test_dev_path_fallback(monkeypatch, tmp_path) -> None:
-    monkeypatch.delenv("TASKMIND_MACOS_HELPER_PATH", raising=False)
-    dev = _patch_dev_helper(monkeypatch, tmp_path)
-
-    assert resolve_helper_path(None) == dev.resolve()
+def test_environment_interpreter_fallback(windows_platform, monkeypatch, tmp_path):
+    fallback = _interpreter(tmp_path, "fallback.exe")
+    monkeypatch.setenv("TASKMIND_WIN_HELPER_PYTHON", str(fallback))
+    runtime, status = build_computer()
+    assert runtime is not None and status.available
+    assert runtime.helper_client.helper_path == fallback
 
 
-def test_missing_helper_is_unavailable_but_returns_none(monkeypatch, tmp_path) -> None:
-    monkeypatch.setattr(sys, "platform", "darwin")
-    monkeypatch.delenv("TASKMIND_MACOS_HELPER_PATH", raising=False)
-    # 屏蔽 dev 自动发现路径，避免本机已 build 的 helper 命中。
-    import app.computer.bootstrap as bootstrap
+def test_current_interpreter_fallback(windows_platform):
+    runtime, status = build_computer()
+    assert runtime is not None and status.available
+    assert runtime.helper_client.helper_path == Path(sys.executable)
 
-    monkeypatch.setattr(
-        bootstrap, "_DEFAULT_DEV_HELPER", tmp_path / "no-dev-helper"
-    )
-    runtime, status = build_macos_computer(
-        helper_path=tmp_path / "does-not-exist"
-    )
+
+def test_missing_interpreter_is_unavailable(windows_platform, tmp_path):
+    runtime, status = build_computer(helper_path=tmp_path / "missing.exe")
     assert runtime is None
-    assert status.enabled is True
-    assert status.available is False
+    assert status.enabled and not status.available
     assert status.reason == "helper_not_found"
 
 
-def test_disabled_does_not_build_runtime(monkeypatch, tmp_path) -> None:
-    helper = _make_executable(tmp_path, "helper")
-    runtime, status = build_macos_computer(helper_path=helper, enabled=False)
-    assert runtime is None
-    assert status.enabled is False
-    assert status.available is False
-    assert status.reason == "disabled"
+def test_missing_dependency_is_unavailable(windows_platform, monkeypatch):
+    monkeypatch.setattr(
+        bootstrap, "_windows_helper_missing_modules", lambda: ["uiautomation"]
+    )
+    runtime, status = build_computer()
+    assert runtime is None and status.reason == "helper_dependency_missing"
 
 
-def test_non_macos_unavailable(monkeypatch, tmp_path) -> None:
+def test_disabled_does_not_inspect_dependencies(windows_platform, monkeypatch):
+    def unexpected_check():
+        pytest.fail("disabled Computer must not inspect helper dependencies")
+    monkeypatch.setattr(bootstrap, "_windows_helper_missing_modules", unexpected_check)
+    runtime, status = build_computer(enabled=False)
+    assert runtime is None and not status.enabled and status.reason == "disabled"
+
+
+def test_unsupported_platform_is_unavailable(monkeypatch):
     monkeypatch.setattr(sys, "platform", "linux")
-    helper = _make_executable(tmp_path, "helper")
-    runtime, status = build_macos_computer(helper_path=helper)
-    assert runtime is None
-    assert status.enabled is True
-    assert status.available is False
+    runtime, status = build_computer(enabled=True)
+    assert runtime is None and status.platform == "linux"
     assert status.reason == "unsupported_platform"
 
 
-def test_build_runtime_when_available(monkeypatch, tmp_path) -> None:
-    monkeypatch.setattr(sys, "platform", "darwin")
-    helper = _make_executable(tmp_path, "helper")
-    runtime, status = build_macos_computer(helper_path=helper)
-    assert runtime is not None
-    assert status.enabled is True
-    assert status.available is True
-    assert status.reason is None
-    assert status.runtime == "macos"
-    assert status.helper_path == str(helper.resolve())
-    # 注入真实 MacOSComputerRuntime（不启动，仅构造）。
-    from app.computer import MacOSComputerRuntime
-
-    assert isinstance(runtime, MacOSComputerRuntime)
-
-
-def test_computer_enabled_switch_and_env(monkeypatch) -> None:
-    monkeypatch.setattr(sys, "platform", "darwin")
+def test_computer_enabled_switch_and_environment(monkeypatch):
+    monkeypatch.delenv("TASKMIND_COMPUTER_ENABLED", raising=False)
     assert computer_enabled() is True
-    assert computer_enabled(enabled=False) is False
-    assert computer_enabled(enabled=True) is True
-
     monkeypatch.setenv("TASKMIND_COMPUTER_ENABLED", "false")
     assert computer_enabled() is False
+    assert computer_enabled(enabled=True) is True
     monkeypatch.setenv("TASKMIND_COMPUTER_ENABLED", "true")
     assert computer_enabled() is True
+    assert computer_enabled(enabled=False) is False
 
 
-def test_current_platform_reports(monkeypatch) -> None:
-    monkeypatch.setattr(sys, "platform", "darwin")
-    assert current_platform() == "macos"
+def test_current_platform_reports_windows(monkeypatch):
     monkeypatch.setattr(sys, "platform", "win32")
-    assert current_platform() == "win32"
+    assert bootstrap.current_platform() == "win32"

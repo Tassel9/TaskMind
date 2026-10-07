@@ -17,7 +17,7 @@ export interface ComposerProps {
   onSend: (content: string) => Promise<void>
   value?: string
   onValueChange?: (value: string) => void
-  /** 轻量 Command palette 项（⌘K）。 */
+  /** 轻量 Command palette 项（CtrlK）。 */
   commands?: ComposerCommand[]
 }
 
@@ -42,7 +42,7 @@ export default function Composer({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      if (event.ctrlKey && event.key.toLowerCase() === 'k') {
         event.preventDefault()
         setCommandOpen((open) => !open)
       }

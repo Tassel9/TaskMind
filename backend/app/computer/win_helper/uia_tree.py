@@ -1,20 +1,7 @@
-"""UIA 元素树采集与语义选择（对齐 macOS 版 AccessibilityBackend.swift）。
+"""UI Automation 元素树采集与语义选择。
 
-对齐点：
-- 角色词表：UIA ControlType → 与 macOS 相同的小写词汇
-  （button/text_field/text_area/checkbox/combo_box/...）；
-- 预算：maxElements=300 / maxDepth=12 / maxVisitedNodes=3000 /
-  maxRepetitiveElements=80 / value 截断 1000；
-- 语义优先级：focused > 文本输入 > 其它可写 > 可操作 > 其它 > 重复项；
-- 真实焦点元素优先入候选（forceFocused），有真实焦点时忽略元素自称的
-  HasKeyboardFocus（Notes 类应用大量误标，Windows 同样存在）。
-
-Windows 差异（有意为之）：
-- 增加遍历时间预算（UIA 是跨进程 COM 调用，深树可能很慢；超出即
-  truncated，语义已由 element_stats / truncated 向模型表达）；
-- ``editable`` 以 UIA ValuePattern 是否可写为准（对齐 macOS 的
-  AXValue settable 语义），DocumentControl（网页 / 编辑器）映射为
-  text_area，与 macOS 对编辑区域的 role 一致。
+将 ControlType 转换为稳定角色，基于 ValuePattern 判定可编辑性，
+优先保留焦点元素与有用信息，并限制深度、节点数和输出预算。
 """
 
 from __future__ import annotations
@@ -44,7 +31,7 @@ __all__ = [
 ]
 
 # ---------------------------------------------------------------------------
-# 预算（对齐 macOS AccessibilityBackend）
+# 预算（对齐 Windows AccessibilityBackend）
 # ---------------------------------------------------------------------------
 
 MAX_ELEMENTS = 300
@@ -210,7 +197,7 @@ def _value_from_pattern(patterns: dict[str, Any]) -> str | None:
 def _is_editable(
     patterns: dict[str, Any], role: str, control, focused: bool  # noqa: ANN001
 ) -> bool:
-    """可输入判定（对齐 macOS 的 AXValue settable，并补齐 Windows 现实）。
+    """按 UI Automation 的 ValuePattern、角色和焦点判断可输入性。
 
     - UIA ValuePattern 明确可写 → 可编辑（原生 Edit / ComboBox 等）；
     - Chromium / Electron 的编辑区域（网页 contenteditable、VS Code 编辑器）
@@ -280,7 +267,7 @@ def _read_bounds(control) -> dict[str, int]:  # noqa: ANN001
 
 
 # ---------------------------------------------------------------------------
-# 语义选择（纯逻辑，对齐 macOS selectSemanticElements）
+# 语义选择（纯逻辑，对齐 Windows selectSemanticElements）
 # ---------------------------------------------------------------------------
 
 
@@ -290,7 +277,7 @@ def is_useful_element(
     value: str | None,
     focused: bool,
 ) -> bool:
-    """对齐 macOS isUsefulElement：有信息的元素 / 非容器元素保留。"""
+    """有信息的元素 / 非容器元素保留。"""
 
     if focused:
         return True
@@ -431,7 +418,7 @@ def collect_elements(root_hwnd: int, target_pid: int) -> CollectionResult:
     """从目标窗口根开始遍历 UIA 树并按语义预算选择输出。
 
     遍历预算（节点数 / 深度 / 时间）与输出预算（元素数 / 重复项）分离，
-    对齐 macOS 版；真实焦点元素优先进入候选集。
+    真实焦点元素优先进入候选集。
     """
 
     try:

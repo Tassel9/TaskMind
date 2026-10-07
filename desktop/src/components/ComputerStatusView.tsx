@@ -1,39 +1,15 @@
 /** Computer Runtime 与权限的紧凑产品状态。 */
 
-import { leaseLabel, permissionLabel } from '../api/computer'
+import { leaseLabel } from '../api/computer'
 import type {
   ComputerPermissionName,
-  ComputerPermissionStatus,
   ComputerStatus,
 } from '../api/computer'
 import { StatusDot } from './ui'
 
-function PermissionRow({
-  name,
-  status,
-  onRequest,
-}: {
-  name: string
-  status: ComputerPermissionStatus
-  onRequest?: () => void
-}): React.JSX.Element {
-  return (
-    <div className="permission-row">
-      <span>{name}</span>
-      <span className={`permission-row__state permission-row__state--${status}`}>
-        {permissionLabel(status)}
-      </span>
-      {status !== 'granted' && onRequest ? (
-        <button className="btn btn-sm" onClick={onRequest}>请求权限</button>
-      ) : null}
-    </div>
-  )
-}
-
 export default function ComputerStatusView({
   status,
   loading = false,
-  onRequestPermission,
 }: {
   status: ComputerStatus | null
   loading?: boolean
@@ -43,18 +19,15 @@ export default function ComputerStatusView({
   if (!status) return <div className="empty-inline empty-inline--error">无法获取电脑操作状态</div>
 
   const reason = status.reason === 'helper_not_found'
-    ? '未找到原生 helper'
+    ? '未找到 Windows helper'
     : status.reason === 'helper_dependency_missing'
       ? '缺少 helper 运行依赖'
       : status.reason === 'unsupported_platform'
         ? `不支持当前平台（${status.platform}）`
         : status.reason
-  const isWindows = status.platform === 'win32'
   const runtimeLabel = status.runtime === 'windows'
     ? 'Windows'
-    : status.runtime === 'macos'
-      ? 'macOS'
-      : status.runtime ?? '未知'
+    : status.runtime ?? '未知'
 
   return (
     <div className="computer-status-view">
@@ -70,26 +43,9 @@ export default function ComputerStatusView({
         </div>
         <small>{leaseLabel(status.lease)}</small>
       </div>
-      {isWindows ? (
+      {status.platform === 'win32' ? (
         <p className="empty-inline">Windows 上无需辅助功能或屏幕录制授权。</p>
-      ) : (
-        <div className="permission-list">
-          <PermissionRow
-            name="辅助功能"
-            status={status.permissions.accessibility}
-            onRequest={onRequestPermission
-              ? () => onRequestPermission('accessibility')
-              : undefined}
-          />
-          <PermissionRow
-            name="屏幕录制"
-            status={status.permissions.screen_recording}
-            onRequest={onRequestPermission
-              ? () => onRequestPermission('screen_recording')
-              : undefined}
-          />
-        </div>
-      )}
+      ) : null}
       {status.helper_path ? (
         <details className="technical-inline">
           <summary>运行时详情</summary>

@@ -380,7 +380,7 @@ export default function ChatPage({
     }
   }
 
-  // Command palette（⌘K）：轻量能力入口，不做永久按钮墙。
+  // Command palette（CtrlK）：轻量能力入口，不做永久按钮墙。
   const composerCommands: ComposerCommand[] = [
     { id: 'new', label: '新建会话', icon: 'plus', onSelect: () => newConversationMutation.mutate() },
     {

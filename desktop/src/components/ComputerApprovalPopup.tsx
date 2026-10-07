@@ -135,7 +135,7 @@ function formatArgumentsJson(argumentsValue: Record<string, unknown>): string {
 }
 
 /**
- * 浮窗内 macOS permission-panel 风格的展示卡片。
+ * 浮窗内 电脑操作审批的展示卡片。
  * 主区域只放用户能看懂的动作与参数摘要；技术细节收进 Show details。
  */
 export function ApprovalFloatingCard({

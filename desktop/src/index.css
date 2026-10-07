@@ -1942,7 +1942,7 @@ textarea,
 }
 
 /* 独立浮动审批小窗（Electron 无边框窗口内使用）
-   目标：compact / native / calm / trustworthy —— 接近 macOS 权限面板。 */
+   目标：compact / native / calm / trustworthy —— 紧凑的操作审批布局。 */
 body.approval-app {
   height: auto;
   overflow: visible;
@@ -2839,7 +2839,7 @@ body.approval-app #root {
   animation: turn-pulse 1.6s ease-in-out infinite;
 }
 
-/* ============ Composer Command Palette（⌘K） ============ */
+/* ============ Composer Command Palette（CtrlK） ============ */
 
 .composer-dock {
   position: relative;

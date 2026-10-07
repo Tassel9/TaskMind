@@ -28,8 +28,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--computer-helper",
         help=(
-            "Explicit computer helper path (macOS: Swift helper binary; "
-            "Windows: Python interpreter used to run the JSONL helper)."
+            "Python interpreter used to run the Windows computer helper."
         ),
     )
     parser.add_argument(

@@ -1,12 +1,12 @@
 """Windows Computer Helper 入口：标准输入/输出上的 UTF-8 JSON Lines。
 
-协议（与 Swift helper 一致）：
+协议：
 
     Python → Helper:  {"id": 1, "method": "ping", "params": {}}
     Helper → Python:  {"id": 1, "result": {"ok": true}}
                      或 {"id": 1, "error": {"code", "...", "message": "..."}}
 
-边界（对齐 macOS helper 主循环）：
+协议边界：
 - stdout 只允许协议 JSON；日志一律写 stderr；
 - 非法 JSON / 未知 method / 缺 method 都返回 error，进程不退出；
 - 单条请求内部异常 → internal_error 响应，进程不退出；

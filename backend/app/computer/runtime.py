@@ -1,16 +1,7 @@
-"""ComputerRuntime 异步接口（V0 Core Contract）。
+"""ComputerRuntime 异步接口。
 
-只定义契约，不实现任何 macOS 逻辑（AXUIElement / ScreenCaptureKit /
-CGEvent / NSWorkspace 均不在本模块）。
-
-接口语义：
-- ``observe``：返回一次结构化 Observation；
-- ``click``：对 ElementTarget / CoordinateTarget 执行点击；
-- ``type``：在当前焦点处输入文本；
-- ``key``：发送按键（可带修饰键，如 ("command", "shift")）；
-- ``scroll``：滚动（delta_x / delta_y）；
-- ``open_app``：打开应用；
-- ``focus_window``：聚焦某个窗口（window_ref 来自 Observation.windows）。
+定义 observe、click、type、key、scroll、open_app 和 focus_window 契约。
+Windows 系统实现由 helper 提供，测试使用 FakeComputerRuntime。
 """
 
 from __future__ import annotations

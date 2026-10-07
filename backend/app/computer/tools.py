@@ -5,7 +5,7 @@
 - 把 JSON 参数解析成 ``computer.models`` 的 Target / 参数；
 - 调用 composition root 注入的 ComputerRuntime；测试使用 Fake 实现。
 
-不直接操作系统、不 import pyautogui、不写任何 macOS API。ComputerRuntime
+不直接操作系统、不 import pyautogui、不写任何 Windows API。ComputerRuntime
 必须由 Application composition root 注入，Tool 不自建 Runtime。
 
 权限（复用现有 ToolPermission）：
@@ -212,8 +212,8 @@ class ComputerKeyTool(BaseTool):
         return ToolDefinition(
             name="computer_key",
             description=(
-                "发送一个按键，可带修饰键（如 command/shift/option/control）。"
-                "keycode 转换由 macOS runtime/helper 负责。"
+                "发送一个按键，可带修饰键（如 control/shift/alt/win）。"
+                "keycode 转换由 Windows runtime/helper 负责。"
                 "可选 element_ref：先聚焦该元素（如编辑器）再发送按键。"
             ),
             parameters={

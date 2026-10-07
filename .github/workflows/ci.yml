@@ -53,16 +53,3 @@ jobs:
         run: npm run typecheck
       - name: Build
         run: npm run build
-
-  native-macos:
-    name: Native macOS
-    runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: native/macos-computer-helper
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build
-        run: swift build
-      - name: Protocol check
-        run: swift Tests/protocol_check.swift

@@ -27,7 +27,7 @@ from app.computer.session import (
 
 
 def _notes() -> ActiveApp:
-    return ActiveApp(name="Notes", bundle_id="com.apple.Notes", pid=111)
+    return ActiveApp(name="Notes", bundle_id="notepad.exe", pid=111)
 
 
 def _vs_code() -> ActiveApp:

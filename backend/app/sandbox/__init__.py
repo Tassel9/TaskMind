@@ -2,7 +2,6 @@
 
 from .backends import (
     HostSandboxBackend,
-    MacOSSeatbeltBackend,
     SandboxBackend,
     UnsupportedSandboxBackend,
 )
@@ -18,7 +17,6 @@ from .supervisor import SandboxSupervisor
 
 __all__ = [
     "HostSandboxBackend",
-    "MacOSSeatbeltBackend",
     "SandboxBackend",
     "SandboxConfig",
     "SandboxError",

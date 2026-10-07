@@ -7,7 +7,7 @@ import type { ComputerContextVM } from '../agent/turnPresentation'
 import { ComputerSessionOverview } from './ComputerPage'
 
 const context: ComputerContextVM = {
-  target: 'TextEdit',
+  target: 'Notepad',
   window: 'Untitled',
   lastAction: '已输入“ TaskMind”',
   verification: '已验证',
@@ -22,14 +22,14 @@ describe('ComputerSessionOverview', () => {
         active
         available
         context={context}
-        runLabel="Append text in TextEdit"
+        runLabel="Append text in Notepad"
         acquiredAt="2026-08-21T10:00:00+08:00"
       />,
     )
     expect(html).toContain('Agent 控制')
-    expect(html).toContain('TextEdit')
+    expect(html).toContain('Notepad')
     expect(html).toContain('Untitled')
-    expect(html).toContain('Append text in TextEdit')
+    expect(html).toContain('Append text in Notepad')
     expect(html).toContain('已输入“ TaskMind”')
     expect(html).toContain('已验证')
   })

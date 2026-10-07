@@ -1,12 +1,6 @@
-"""目标窗口截图：PrintWindow 优先，桌面裁剪兜底；坐标映射对齐 macOS 版。
+"""目标窗口截图：PrintWindow 优先，桌面裁剪兜底。
 
-坐标契约（与 MacOSComputerCore/CoordinateMapping.swift 对应）：
-- 截图像素坐标系（pixel_width × pixel_height）；
-- 映射到窗口物理坐标矩形 bounds（x, y, width, height）；
-- ``ScreenshotMapping.global_point`` 把截图坐标换算为屏幕物理坐标，
-  供 click_coordinate 使用。
-
-Windows 没有屏幕录制权限门槛，截图失败只可能是窗口最小化 / 特殊渲染。
+截图像素坐标映射为屏幕物理坐标，越界请求明确拒绝。
 """
 
 from __future__ import annotations
@@ -37,7 +31,7 @@ class ScreenshotMapping:
     height: int
 
     def global_point(self, x: int, y: int) -> tuple[float, float] | None:
-        """截图坐标 → 屏幕物理坐标；越界返回 None（对齐 macOS 版）。"""
+        """截图坐标 → 屏幕物理坐标；越界返回 None。"""
 
         if (
             self.pixel_width <= 0

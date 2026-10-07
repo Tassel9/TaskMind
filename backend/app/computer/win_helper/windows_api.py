@@ -3,7 +3,7 @@
 仅 Windows 可用；重活全部经 ctypes 延迟获取（非 Windows 上 import 本模块
 不会崩溃，但函数调用会抛 RuntimeError）。
 
-设计约束（对齐 macOS helper 的对外语义）：
+设计约束：
 - 一切坐标都是**物理像素**（进程已设 Per-Monitor-V2 DPI 感知）；
 - 输入合成使用 ``SendInput``（Unicode 文本 / 按键 / 鼠标），与 Python
   端契约中的 ``delivery_status`` 对应；
@@ -283,7 +283,7 @@ def process_alive(pid: int) -> bool:
 
 
 def process_exe_path(pid: int) -> str | None:
-    """进程可执行文件完整路径（等价于 macOS 的 bundle 身份）。
+    """进程可执行文件完整路径。
 
     失败（权限不足 / 系统进程）返回 None。
     """
@@ -450,7 +450,7 @@ def _key_event(
 def send_unicode_text(
     text: str, chunk_units: int = 20, inter_chunk_sleep: float = 0.02
 ) -> bool:
-    """发送 Unicode 文本（KEYEVENTF_UNICODE），UTF-16 分块（对齐 macOS 版）。
+    """发送 Unicode 文本（KEYEVENTF_UNICODE），UTF-16 分块。
 
     每个 code unit 一对 down/up；代理对（emoji 等）作为连续 code unit
     自然成对投递。空字符串不产生任何事件。
@@ -599,7 +599,7 @@ def _pe_subsystem(path: str) -> int | None:
 
 
 def _resolve_app_paths(app: str) -> str | None:
-    """注册表 App Paths 解析（等价于 macOS 的 LaunchServices 名称解析）。"""
+    """注册表 App Paths 解析。"""
 
     try:
         import winreg

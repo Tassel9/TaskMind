@@ -173,10 +173,10 @@ describe('参数摘要', () => {
       computerActionSummary(
         approval({
           tool_name: 'computer_key',
-          arguments: { key: 'n', modifiers: ['command'] },
+          arguments: { key: 'n', modifiers: ['control'] },
         }),
       ),
-    ).toBe('⌘ N')
+    ).toBe('Ctrl N')
   })
 
   it('computer_click element_ref → 摘要', () => {
@@ -208,9 +208,9 @@ describe('参数摘要', () => {
 
 describe('formatKeyShortcut', () => {
   it('modifier 符号 + 键名', () => {
-    expect(formatKeyShortcut('n', ['command'])).toBe('⌘ N')
-    expect(formatKeyShortcut('c', ['command', 'shift'])).toBe('⌘ ⇧ C')
-    expect(formatKeyShortcut('enter', ['command'])).toBe('⌘ Return')
+    expect(formatKeyShortcut('n', ['control'])).toBe('Ctrl N')
+    expect(formatKeyShortcut('c', ['control', 'shift'])).toBe('Ctrl Shift C')
+    expect(formatKeyShortcut('enter', ['control'])).toBe('Ctrl Return')
   })
 })
 

@@ -111,7 +111,7 @@ def test_save_keeps_api_key_out_of_json(tmp_path: Path) -> None:
     assert json.loads(raw)["default_provider"] == "qwen"
 
 
-def test_effective_configuration_merges_roles_and_keychain(tmp_path: Path) -> None:
+def test_effective_configuration_merges_roles_and_credentials(tmp_path: Path) -> None:
     store = ModelSettingsStore(tmp_path / "models.json")
     secrets = FakeSecrets()
     service = ModelSettingsService(

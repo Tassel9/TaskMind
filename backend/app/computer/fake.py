@@ -5,7 +5,7 @@
   ActionResult 并记录进 ``action_history``；
 - ``observe`` 直接返回预设 Observation，不模拟真实 GUI 状态变化。
 
-保持简单：不模拟焦点、不模拟状态机、不需要任何 macOS / Accessibility 权限。
+保持简单：不模拟焦点、不模拟状态机、不需要任何 Windows / Accessibility 权限。
 """
 
 from __future__ import annotations

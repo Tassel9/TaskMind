@@ -88,13 +88,13 @@ export function computerActionDescription(approval: ApprovalRequest): string {
 // ---------------------------------------------------------------------------
 
 const MODIFIER_SYMBOLS: Record<string, string> = {
-  command: '⌘',
-  cmd: '⌘',
-  shift: '⇧',
-  option: '⌥',
-  alt: '⌥',
-  control: '⌃',
-  ctrl: '⌃',
+  shift: 'Shift',
+  alt: 'Alt',
+  control: 'Ctrl',
+  ctrl: 'Ctrl',
+  win: 'Win',
+  super: 'Win',
+  meta: 'Win',
 }
 
 const NAMED_KEYS: Record<string, string> = {
@@ -118,7 +118,7 @@ function formatKeyName(key: string): string {
   return key
 }
 
-/** 把 key + modifiers 格式化成人类可读快捷键，如 ``⌘ N``。 */
+/** 把 key + modifiers 格式化成人类可读快捷键，如 ``Ctrl N``。 */
 export function formatKeyShortcut(
   key: string,
   modifiers: readonly string[],

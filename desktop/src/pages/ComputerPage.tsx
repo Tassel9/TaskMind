@@ -150,7 +150,7 @@ export default function ComputerPage(): React.JSX.Element {
       </div>
 
       <section className="computer-permissions">
-        <div className="section-heading"><div><h3>运行时与权限</h3><p>{statusQuery.data?.platform === 'win32' ? 'Windows 运行时环境' : 'macOS 所需系统权限'}</p></div></div>
+        <div className="section-heading"><div><h3>运行时与权限</h3><p>Windows 运行时环境</p></div></div>
         <ComputerStatusView
           status={statusQuery.data ?? null}
           loading={statusQuery.isLoading}

@@ -1,15 +1,5 @@
 #!/usr/bin/env python3
-"""测试用假 Computer Helper：实现与 Swift helper 相同的 JSON Lines 协议。
-
-用于 MacOSHelperClient 的 pytest，不依赖 Swift 构建。
-
-隐藏测试方法（供测试验证错误处理路径）：
-- ``__echo_id``     把收到的请求 id 回显到 result（验证 id correlation）；
-- ``__bad_json``    向 stdout 写一行非 JSON，再回一个 error（验证非 JSON 不崩）；
-- ``__unknown_id``  先回一条无主响应，再回 error（验证未知 id 被丢弃）；
-- ``__malformed``   回一条有 id 但既无 result 也无 error 的响应；
-- ``__crash``       直接 os._exit(1)（验证进程意外退出时 pending 被 reject）。
-"""
+"""测试用假 Computer Helper：实现 JSON Lines 协议，不执行真实电脑操作。"""
 
 import json
 import os
@@ -59,14 +49,14 @@ def main() -> None:
                 {
                     "id": msg_id,
                     "result": {
-                        "platform": "macos",
+                        "platform": "win32",
                         "helper_version": HELPER_VERSION,
                         "process_id": os.getpid(),
                     },
                 }
             )
         elif method == "open_app":
-            # 模拟 Swift helper：不启动真实 App，只回结构化的成功结果。
+            # 模拟 Windows helper：不启动真实 App，只回结构化的成功结果。
             params = payload.get("params")
             app = params.get("app") if isinstance(params, dict) else None
             if not isinstance(app, str) or not app.strip():
