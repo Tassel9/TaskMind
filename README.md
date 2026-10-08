@@ -4,17 +4,17 @@
   <p>
     <a href="https://github.com/Tassel9/TaskMind/stargazers"><img src="https://img.shields.io/github/stars/Tassel9/TaskMind?style=flat-square" alt="GitHub Stars"></a>
     <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square" alt="Python 3.12">
-    <img src="https://img.shields.io/badge/FastAPI-Web_Console-009688?style=flat-square" alt="FastAPI">
-    <img src="https://img.shields.io/badge/OpenHands_SDK-1.47.0-412991?style=flat-square" alt="OpenHands SDK 1.47.0">
+    <img src="https://img.shields.io/badge/FastAPI-Python_Host-009688?style=flat-square" alt="FastAPI Python Host">
+    <img src="https://img.shields.io/badge/Runtime-AgentLoop-412991?style=flat-square" alt="AgentLoop">
     <img src="https://img.shields.io/badge/MCP-Supported-6E56CF?style=flat-square" alt="MCP">
     <img src="https://img.shields.io/badge/LLM-DeepSeek-4D6BFE?style=flat-square" alt="DeepSeek">
     <img src="https://img.shields.io/badge/State-SQLite-003B57?style=flat-square" alt="SQLite">
-    <img src="https://img.shields.io/badge/Interface-CLI_%2B_Web-111827?style=flat-square" alt="CLI + Web">
+    <img src="https://img.shields.io/badge/Interface-Desktop_%2B_CLI-111827?style=flat-square" alt="Desktop + CLI">
   </p>
 
   <p>面向长期工作的<strong>本地 AI Agent Harness</strong>。</p>
   <p>它不只完成当前对话，还会管理长上下文、跟踪复杂任务、恢复中断 Run、使用本地与 MCP 工具，并从真实完成的工作中逐步形成可复用的记忆与 Skill。</p>
-  <p><sub>基于 Session Memory、Checkpoint 与 Fork 子 Agent，任务可恢复、可续接 —— 减少上下文丢失、重复执行与协作冲突。</sub></p>
+  <p><sub>基于上下文压缩、长期记忆与 Checkpoint，单 Agent 任务可恢复、可续接，保留任务状态与执行证据。</sub></p>
 </div>
 
 ## 项目预览
@@ -29,7 +29,7 @@
 
 ![TaskMind 编码任务](docs/images/web-coding-task.png)
 
-执行过程以实时时间线呈现：思考、工具调用与结果一屏可见，回答支持 Markdown 与表格渲染；每个步骤都写入本地记录，可随时停止、分支或回退。
+执行过程以实时时间线呈现：回答、工具调用与结果一屏可见，回答支持 Markdown 与表格渲染；运行过程写入本地记录，可中断 Run，并基于 Checkpoint 恢复执行。
 
 **技能体系**
 
@@ -46,7 +46,7 @@
 > Run 进度持续跟踪，中断后可从断点继续；历史按 Token 预算动态压缩，窗口不膨胀、成本不失控。
 
 - **Run-Task-Checkpoint 分层机制** — Run 承载单次执行、Task 跟踪跨 Run 的整体进度、Checkpoint 按执行边界落库状态与结果，实现跨 Run 的进度跟踪与断点恢复。
-- **断点恢复** — 中断或崩溃后可从断点继续执行，已完成的步骤不会重复执行；结果不确定的调用先核验再继续，绝不盲目重放。
+- **断点恢复** — 中断后显式恢复 Run，检查点提供已完成步骤与未决工具调用的证据；恢复上下文要求先核验结果不确定的调用，再决定是否重试。
 - **动态 Token Budget 与分层压缩** — 接近上下文上限时先整理工具输出，再把早期历史滚动摘要为结构化摘要，在保留任务目标和关键状态的前提下控制历史增长。
 - **缓存命中率 68.0% → 75.5%** — 迭代回归中的平均缓存命中率由 68.0% 提升至 75.5%，减少每轮重复携带历史的 Token 开销。
 
@@ -77,44 +77,54 @@
 
 ## 系统流程
 
+当前主执行链是**单 Agent 的模型与工具循环**，由项目自身的 `AgentRuntime / AgentLoop` 实现。上下文摘要、记忆反思与 Skill 提炼使用独立模型调用；当前没有子 Agent 的 fork、调度与结果汇总机制。
+
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as 用户
-    participant Web as Web 工作台 / CLI
-    participant API as FastAPI + WebSocket
-    participant Agent as 主 Agent 会话
-    participant Log as OpenHands EventLog
-    participant Memory as Session Memory
-    participant Store as SQLite 控制面
-    participant Sub as Fork 子 Agent
+    participant UI as Electron 桌面端 / CLI
+    participant Host as Python Host（ConversationService / RunManager）
+    participant Agent as AgentRuntime / AgentLoop
+    participant Context as ContextManager
+    participant Model as Model Adapter
+    participant Tools as ToolExecutor
+    participant Store as SQLite 状态与证据存储
 
-    User->>Web: 描述编码任务
-    Web->>API: 提交消息（CLI 直接进入运行时）
-    API->>Agent: 创建或恢复会话并开始执行
-    Agent->>Log: 记录消息、工具调用与结果事件
-    Agent->>Agent: 思考 → 工具调用循环（读写文件 / 运行命令）
+    User->>UI: 描述任务
+    UI->>Host: 提交消息（桌面端经 /rpc，CLI 直接调用）
+    Host->>Store: 加载会话历史与摘要，创建 Run
+    Host->>Agent: 启动单 Agent 执行
 
-    opt 子任务并行
-        Agent->>Sub: 派生 explore / general 子 Agent
-        Sub-->>Agent: task_result 汇报
+    loop 模型请求与工具调用
+        Agent->>Context: 按 Token 预算组装上下文
+        opt 达到压缩条件
+            Context->>Context: 整理工具输出 / 滚动摘要早期历史
+        end
+        Context-->>Agent: 返回本轮模型上下文
+        Agent->>Model: 提交消息与工具定义
+        Model-->>Agent: 返回文本或结构化工具调用
+        opt 执行工具
+            Agent->>Store: 保存调用前 Checkpoint
+            Agent->>Tools: 权限校验与审批后执行本地 / MCP / 电脑工具
+            Tools-->>Agent: 返回工具结果
+            Agent->>Store: 更新 Checkpoint，记录 Trace / Evidence
+        end
+        Agent-->>Host: 推送文本与工具事件
+        Host-->>UI: 更新实时时间线
     end
 
-    opt 上下文接近上限
-        Agent->>Memory: 压缩早期事件为十段式记忆
-        Memory-->>Agent: 返回可续接的压缩上下文
-    end
+    Agent-->>Host: 返回运行结果
+    Host->>Store: 保存会话历史、摘要与 Run 状态
+    Host-->>UI: 返回最终结果
+    UI-->>User: 展示执行过程与最终结果
 
-    Agent->>Store: 写入步骤 / 检查点 / 文件快照
-    Agent-->>API: 流式推送思考、工具与文本事件
-    API-->>Web: 实时时间线渲染
-    Web-->>User: 展示执行过程与最终结果
-
-    opt 中断之后
-        User->>Web: 恢复会话 / 分支到指定事件 / 回退文件
-        Web->>API: resume / branch / rewind-files
-        API->>Store: 读取检查点与快照（校验 SHA-256）
-        Store-->>Agent: 恢复任务状态并继续
+    opt 显式恢复已中断 Run
+        User->>UI: 选择恢复 Run
+        UI->>Host: run.recover 或 CLI /run recover
+        Host->>Store: 读取中断 Checkpoint 与当前会话历史
+        Host->>Agent: 启动新 Run，注入恢复证据
+        Agent->>Agent: 核验未决调用的实际结果后继续
     end
 ```
 
@@ -122,12 +132,11 @@ sequenceDiagram
 
 | 层次 | 技术 | 用途 |
 | :--- | :--- | :--- |
-| Agent 运行时 | OpenHands SDK 1.47、Event Sourcing | 事件日志、工具调用循环、上下文压缩 |
-| 状态与恢复 | SQLite（WAL） | 会话 / 运行 / 步骤 / 检查点 / 文件快照 |
-| Web 服务 | FastAPI、WebSocket、零构建前端 | 实时事件中继、会话控制台 |
-| 双入口 | CLI REPL + Web | 同一份运行时状态，两端可接力 |
-| 扩展 | MCP、SKILL.md | 外部工具接入、工作流沉淀 |
-| 部署 | Docker | 容器化运行 |
+| Agent 运行时 | 自定义 AgentRuntime / AgentLoop、模型适配器 | 单 Agent 模型与工具循环、上下文压缩 |
+| 状态与恢复 | SQLite（WAL） | 会话 / Task / Run / Checkpoint / Trace / Evidence |
+| 本地服务 | FastAPI、WebSocket JSON-RPC | Python Host、`/rpc` 接口、实时事件中继 |
+| 双入口 | Electron + React + TypeScript 桌面端、CLI REPL | 共用 ConversationService 与 RunManager |
+| 扩展 | MCP、SKILL.md、Windows Computer Helper | 外部工具接入、技能加载、电脑操作 |
 
 ## 本地运行
 
@@ -188,7 +197,7 @@ python -m app           # 在 backend 目录启动交互式 CLI
 python -m app --help    # 查看当前 CLI 参数
 ```
 
-REPL 内支持 `/context`、`/compact`、`/branch [EVENT_ID]`、`/tasks`、`/rewind-files`、`/runs`、`/steps`、`/uncertain`。
+REPL 内支持 `/new`、`/sessions`、`/runs`、`/run <Run ID>`、`/run recover <Run ID>`、`/checkpoints`、`/trace <Run ID>`；输入 `/help` 查看全部命令。
 
 ## 技能（SKILL.md）
 
@@ -239,4 +248,4 @@ TaskMind
 - **本地优先** — 会话、运行、检查点存放于 `backend/.taskmind/taskmind.db`；模型调用和显式联网工具会访问外部服务。
 - **进程隔离边界** — 当前没有原生 OS 隔离后端；请求隔离的 Shell / MCP 调用会拒绝执行。只有显式配置可信的 `host` 模式才直接运行，详见 [执行边界](docs/sandbox.md)。
 - **危险操作默认确认** — Shell、删除类操作会先请求人工确认；权限模式可随时调整。
-- **恢复不猜测** — 结果不确定的写入必须核验后才继续；文件回退先做 SHA 校验，拒绝覆盖外部漂移。
+- **恢复证据与副作用边界** — Checkpoint 记录已完成与未决调用，恢复上下文要求先核验未决调用；这不保证跨外部系统的副作用恰好执行一次。
