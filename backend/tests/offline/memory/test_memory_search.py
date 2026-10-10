@@ -25,6 +25,7 @@ from app.agent.runtime_helpers import recalled_memory_revisions
 from app.memory import (
     CORE_MEMORY_MESSAGE_NAME,
     MEMORY_INDEX_MESSAGE_NAME,
+    MEMORY_POLICY_MESSAGE_NAME,
     MEMORY_RECALL_MESSAGE_NAME,
     MEMORY_SEARCH_TOOL_NAME,
     FakeEmbeddingAdapter,
@@ -34,6 +35,7 @@ from app.memory import (
     MemorySearchSettings,
     SearchMode,
 )
+from app.memory.prompts import MEMORY_CONTEXT_NOTICE
 from app.memory.search_index import MemorySearchIndex, _ChunkHit
 from app.models.adapter import ModelAdapter
 from app.models.config import ModelSettings, ProviderConfig
@@ -433,6 +435,12 @@ async def test_context_messages_hybrid_injects_recall_instead_of_index(
     content = recall_message.content or ""
     assert "possibly relevant" in content.lower()
     assert "memory_read" in content
+    for message in hybrid_messages:
+        if message.name == MEMORY_POLICY_MESSAGE_NAME:
+            assert message.role is MessageRole.SYSTEM
+        else:
+            assert message.role is MessageRole.USER
+            assert MEMORY_CONTEXT_NOTICE in (message.content or "")
     # 只注入 cue 级信息：候选正文不完整注入。
     assert "2024-11 定稿" not in content.replace("Snippet: ", "") or (
         content.count("2024-11 定稿") <= 1
@@ -442,6 +450,11 @@ async def test_context_messages_hybrid_injects_recall_instead_of_index(
     legacy_names = [message.name for message in legacy_messages]
     assert MEMORY_INDEX_MESSAGE_NAME in legacy_names
     assert MEMORY_RECALL_MESSAGE_NAME not in legacy_names
+    assert all(
+        message.role is MessageRole.USER
+        for message in legacy_messages
+        if message.name != MEMORY_POLICY_MESSAGE_NAME
+    )
 
 
 @pytest.mark.asyncio
@@ -470,6 +483,12 @@ async def test_runtime_index_failure_falls_back_to_legacy_index(
     assert MEMORY_INDEX_MESSAGE_NAME in names
     assert MEMORY_RECALL_MESSAGE_NAME not in names
     assert context.recall_mode == SearchMode.UNAVAILABLE.value
+    index_message = next(
+        message for message in context.messages
+        if message.name == MEMORY_INDEX_MESSAGE_NAME
+    )
+    assert index_message.role is MessageRole.USER
+    assert MEMORY_CONTEXT_NOTICE in (index_message.content or "")
     await manager.close()
 
 
@@ -496,6 +515,8 @@ async def test_recall_message_respects_top5_and_char_budget(
         max_chars=manager.search_settings.recall_message_max_chars
     )
     assert message is not None
+    assert message.role is MessageRole.USER
+    assert MEMORY_CONTEXT_NOTICE in (message.content or "")
     assert len(snapshot.candidates) <= 5
     content = message.content or ""
     assert len(content) <= manager.search_settings.recall_message_max_chars + 200

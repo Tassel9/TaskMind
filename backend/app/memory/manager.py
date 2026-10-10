@@ -36,6 +36,7 @@ from .maintenance import MemoryMaintenance
 from .models import MemoryRecord, MemoryStatus
 from .prompts import (
     CORE_MEMORY_HEADER,
+    MEMORY_CONTEXT_NOTICE,
     MEMORY_POLICY_PROMPT,
 )
 from .recall import (
@@ -169,7 +170,8 @@ class MemoryManager:
         - ``recall`` 非 None 表示 Hybrid 模式：注入 Core + 本 Run 的 Recall
           Candidates + Policy，不再注入完整 INDEX.md；
         - ``recall`` 为 None 表示 Legacy 模式（搜索投影不可用）：注入
-          Core + INDEX.md + Policy，行为与旧版本一致。
+          Core + INDEX.md + Policy；
+        - 可变记忆作为 USER 背景数据，只有固定 Policy 使用 SYSTEM。
         """
 
         async with self._lock:
@@ -179,9 +181,10 @@ class MemoryManager:
                 core_content = core_text.strip()
                 if not core_content.startswith(CORE_MEMORY_HEADER):
                     core_content = f"{CORE_MEMORY_HEADER}\n\n{core_content}"
+                core_content = f"{MEMORY_CONTEXT_NOTICE}\n\n{core_content}"
                 messages.append(
                     Message(
-                        role=MessageRole.SYSTEM,
+                        role=MessageRole.USER,
                         name=CORE_MEMORY_MESSAGE_NAME,
                         content=core_content,
                     )
@@ -191,9 +194,9 @@ class MemoryManager:
                 if index_text is not None:
                     messages.append(
                         Message(
-                            role=MessageRole.SYSTEM,
+                            role=MessageRole.USER,
                             name=MEMORY_INDEX_MESSAGE_NAME,
-                            content=index_text,
+                            content=f"{MEMORY_CONTEXT_NOTICE}\n\n{index_text}",
                         )
                     )
             else:

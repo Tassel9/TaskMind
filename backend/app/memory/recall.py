@@ -113,7 +113,7 @@ class MemoryRecallSnapshot:
     degrade_reason: str | None = None
 
     def render_message(self, *, max_chars: int = 2_400) -> Message | None:
-        """渲染为临时注入的系统消息；无候选时返回 None（不注入噪声）。"""
+        """渲染为临时 USER 背景消息；无候选时返回 None（不注入噪声）。"""
 
         if not self.candidates:
             return None
@@ -136,7 +136,7 @@ class MemoryRecallSnapshot:
         if len(lines) == 1:
             return None
         return Message(
-            role=MessageRole.SYSTEM,
+            role=MessageRole.USER,
             name=MEMORY_RECALL_MESSAGE_NAME,
             content="\n".join(lines).rstrip() + "\n",
         )
