@@ -19,23 +19,25 @@
 
 ## 项目预览
 
-**新建任务**
+以下截图使用当前 TaskMind 桌面端与演示数据，围绕一次订单接口排查展示任务续接、上下文管理和长期记忆；图中日志、进度与 Token 数仅用于说明界面。
 
-![TaskMind 新建任务](docs/images/web-welcome.png)
+**任务有进度，中断后可续接**
 
-描述一项编码任务，也可以直接粘贴代码或报错信息。任务以工作区为根目录执行，危险操作先请求确认，也可以切换为完全自主执行。
+![TaskMind 任务进度、恢复入口与执行记录](docs/images/taskmind-task-recovery.png)
 
-**编码任务对话**
+Task 保留跨 Run 的任务目标与步骤进度，右侧详情展示本轮工具活动、用量和上下文状态。中断后可基于 Checkpoint 创建新 Run 继续；未决调用先核验实际结果，再决定是否重试。
 
-![TaskMind 编码任务](docs/images/web-coding-task.png)
+**长上下文按预算整理，压缩过程可查看**
 
-执行过程以实时时间线呈现：回答、工具调用与结果一屏可见，回答支持 Markdown 与表格渲染；运行过程写入本地记录，可中断 Run，并基于 Checkpoint 恢复执行。
+![TaskMind 上下文预算、输入构成与滚动摘要](docs/images/taskmind-context-budget.png)
 
-**技能体系**
+按模型步骤查看输入预算、工具结果和 Skill 的占用，以及工具输出压缩、滚动摘要的处理结果。压缩改变本轮模型视图，原始历史与执行证据仍可回查。
 
-![TaskMind 技能](docs/images/web-skills.png)
+**少量核心信息常驻，其余记忆按需读取**
 
-把反复使用的编码流程沉淀成 SKILL.md 技能（调试 / 测试 / 重构 / Git / 审查 / 探索），模型按场景自动调用，也可以手动唤起。
+![TaskMind 核心记忆与普通记忆](docs/images/taskmind-layered-memory.png)
+
+核心记忆保留稳定偏好与长期约束；普通记忆跨会话保存，按需召回并读取完整正文。版本、正文读取次数与归档状态可在界面中查看。
 
 ## 核心功能
 
